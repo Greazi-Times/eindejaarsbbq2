@@ -1,0 +1,20 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@source '../../../../vendor/jeffgreco13/filament-breezy/resources/**/*';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+/* Sidebar container */
+.fi-sidebar {
+    background-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.08);
+}
+
+.dark .fi-sidebar {
+    background-color: rgba(43, 43, 43, 0.3);
+}
+
+/* Optional: remove the grey default */
+.fi-sidebar::before {
+    display: none;
+}
