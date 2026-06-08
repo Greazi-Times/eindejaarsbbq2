@@ -20,10 +20,21 @@ class Enrollment extends Model
         'guest_amount',
         'dietary_preferences',
         'notes',
+        'requires_payment',
+        'payment_status',
+        'payment_amount',
+        'payment_currency',
+        'mollie_payment_link_id',
+        'mollie_payment_link_url',
+        'mollie_payment_id',
+        'paid_at',
     ];
 
     protected $casts = [
         'dietary_preferences' => 'array',
+        'requires_payment' => 'boolean',
+        'payment_amount' => 'decimal:2',
+        'paid_at' => 'datetime',
     ];
 
     public function event(): BelongsTo

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'mollie' => [
+        'api_key' => env('MOLLIE_API_KEY'),
+        'student_payment_currency' => env('MOLLIE_STUDENT_PAYMENT_CURRENCY', 'EUR'),
+        'student_payment_description' => env('MOLLIE_STUDENT_PAYMENT_DESCRIPTION', 'Eindejaars BBQ aanmelding'),
+    ],
+
 ];

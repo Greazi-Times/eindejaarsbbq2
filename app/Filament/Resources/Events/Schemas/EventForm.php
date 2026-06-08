@@ -20,6 +20,12 @@ class EventForm
                 DateTimePicker::make('starts_at'),
                 DateTimePicker::make('ends_at'),
                 TextInput::make('location'),
+                TextInput::make('student_payment_amount')
+                    ->label('Studentenprijs')
+                    ->helperText('Bedrag dat studenten moeten betalen wanneer hun vereniging betaling vereist.')
+                    ->numeric()
+                    ->minValue(0)
+                    ->prefix('€'),
                 Textarea::make('description')
                     ->columnSpanFull(),
                 Select::make('partners')

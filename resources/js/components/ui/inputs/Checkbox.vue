@@ -36,7 +36,7 @@ const updateValue = (event: Event) => {
 <template>
     <div>
         <label
-            class="flex cursor-pointer items-start gap-3"
+            class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4 transition hover:border-white/20 hover:bg-white/[0.08] has-[:checked]:border-primary/60 has-[:checked]:bg-primary/[0.12]"
             :for="props.id"
         >
             <input
@@ -53,7 +53,7 @@ const updateValue = (event: Event) => {
             />
 
             <span
-                class="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-transparent transition peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-primary/20 peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
+                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-white/20 bg-background/70 text-transparent transition peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-primary/20 peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                 aria-hidden="true"
             >
                 <svg
@@ -75,7 +75,7 @@ const updateValue = (event: Event) => {
             <div>
                 <div
                     v-if="props.label"
-                    class="text-sm font-medium text-foreground"
+                    class="text-sm font-semibold text-foreground"
                 >
                     {{ props.label }}
 
@@ -89,7 +89,7 @@ const updateValue = (event: Event) => {
 
                 <p
                     v-if="props.description"
-                    class="mt-1 text-sm text-muted-foreground"
+                    class="mt-1 text-sm leading-5 text-muted-foreground"
                 >
                     {{ props.description }}
                 </p>
@@ -98,7 +98,7 @@ const updateValue = (event: Event) => {
 
         <p
             v-if="props.error"
-            class="mt-2 text-sm text-red-500"
+            class="mt-2 text-sm font-medium text-red-300"
         >
             {{ props.error }}
         </p>

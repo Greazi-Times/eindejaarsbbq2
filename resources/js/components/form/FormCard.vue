@@ -13,7 +13,7 @@ withDefaults(defineProps<Props>(), {
 <template>
     <div class="mx-auto w-full max-w-5xl px-4">
         <div
-            class="flex w-full flex-col overflow-hidden rounded-4xl border-2 bg-card px-8 py-10 shadow-sm"
+            class="flex w-full flex-col overflow-hidden rounded-3xl border border-white/15 bg-card/95 px-5 py-6 shadow-2xl shadow-black/30 backdrop-blur-xl sm:px-8 sm:py-8"
             :style="{ height }"
         >
             <div v-if="title" class="mb-8 text-center">

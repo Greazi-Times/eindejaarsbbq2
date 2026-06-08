@@ -16,9 +16,9 @@ defineProps<{
 </script>
 
 <template>
-    <div class="bg-gray-500/8">
+    <div class="border-t border-white/10 bg-black/20">
         <footer
-            class="relative mx-auto max-w-[80%] px-6 py-16 text-white md:px-12"
+            class="relative mx-auto max-w-7xl px-4 py-14 text-white sm:px-6 md:py-16"
         >
             <!-- Top -->
             <div class="grid grid-cols-1 gap-10 md:grid-cols-6">
@@ -26,7 +26,7 @@ defineProps<{
                 <div class="flex flex-col gap-6 md:col-span-2">
                     <div class="flex items-center gap-3">
                         <div
-                            class="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-secondary"
+                            class="h-9 w-9 rounded-md bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/20"
                         ></div>
                         <span class="text-lg font-semibold"
                             >Eindejaars BBQ</span
@@ -34,13 +34,13 @@ defineProps<{
                     </div>
 
                     <p class="max-w-sm text-white/70">
-                        De beste barbeceu van het jaar, georganiseerd door de
-                        studievereningingen van Avans ATIx
+                        De beste barbecue van het jaar, georganiseerd door de
+                        studieverenigingen van Avans ATIx.
                     </p>
 
                     <div class="flex items-center gap-4 text-white/70">
                         <a
-                            class="text-secondary hover:text-primary"
+                            class="rounded-md p-2 text-secondary transition hover:bg-white/10 hover:text-white"
                             href="https://github.com/Greazi-Times/"
                             target="_blank"
                             rel="noopener noreferrer"
@@ -55,7 +55,9 @@ defineProps<{
                     class="grid grid-cols-2 gap-8 sm:grid-cols-2 md:col-span-3 md:grid-cols-3 lg:col-span-4 lg:grid-cols-3"
                 >
                     <div class="flex flex-col gap-3">
-                        <span class="text-sm text-white/60">Partners</span>
+                        <span class="text-sm font-semibold text-secondary"
+                            >Partners</span
+                        >
 
                         <template v-if="partners?.length">
                             <a
@@ -63,8 +65,12 @@ defineProps<{
                                 :key="partner.id"
                                 :href="partner.website || undefined"
                                 :target="partner.website ? '_blank' : undefined"
-                                :rel="partner.website ? 'noopener noreferrer' : undefined"
-                                class="hover:text-white"
+                                :rel="
+                                    partner.website
+                                        ? 'noopener noreferrer'
+                                        : undefined
+                                "
+                                class="text-white/70 transition hover:text-white"
                             >
                                 {{ partner.name }}
                             </a>
@@ -76,16 +82,24 @@ defineProps<{
                     </div>
 
                     <div class="flex flex-col gap-3">
-                        <span class="text-sm text-white/60">Verenigingen</span>
+                        <span class="text-sm font-semibold text-secondary"
+                            >Verenigingen</span
+                        >
 
                         <template v-if="verenigingen?.length">
                             <a
                                 v-for="vereniging in verenigingen"
                                 :key="vereniging.id"
                                 :href="vereniging.website || undefined"
-                                :target="vereniging.website ? '_blank' : undefined"
-                                :rel="vereniging.website ? 'noopener noreferrer' : undefined"
-                                class="hover:text-white"
+                                :target="
+                                    vereniging.website ? '_blank' : undefined
+                                "
+                                :rel="
+                                    vereniging.website
+                                        ? 'noopener noreferrer'
+                                        : undefined
+                                "
+                                class="text-white/70 transition hover:text-white"
                             >
                                 {{ vereniging.name }}
                             </a>
@@ -97,10 +111,24 @@ defineProps<{
                     </div>
 
                     <div class="flex flex-col gap-3">
-                        <span class="text-sm text-white/60">Legal</span>
-                        <a class="hover:text-white">Terms</a>
-                        <a class="hover:text-white">Privacy</a>
-                        <a class="hover:text-white">Cookies</a>
+                        <span class="text-sm font-semibold text-secondary"
+                            >Legal</span
+                        >
+                        <a
+                            href="/legal#terms"
+                            class="text-white/70 transition hover:text-white"
+                            >Terms of Service</a
+                        >
+                        <a
+                            href="/legal#privacy"
+                            class="text-white/70 transition hover:text-white"
+                            >Privacy Policy</a
+                        >
+                        <a
+                            href="/legal#cookies"
+                            class="text-white/70 transition hover:text-white"
+                            >Cookie Policy</a
+                        >
                     </div>
                 </div>
             </div>

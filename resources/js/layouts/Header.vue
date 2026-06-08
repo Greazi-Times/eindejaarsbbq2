@@ -1,20 +1,28 @@
 <script setup lang="ts">
-import {
-    PhDiscordLogo,
-    PhGithubLogo,
-    PhHamburger,
-    PhPatreonLogo,
-} from '@phosphor-icons/vue';
-import Button from '@/components/ui/Button.vue';
+import { PhGithubLogo, PhHamburger } from '@phosphor-icons/vue';
 
 const scrollToSection = (sectionId: string) => {
-    document.getElementById(sectionId)?.scrollIntoView({
+    const section = document.getElementById(sectionId);
+
+    if (!section) {
+        window.location.href = `/#${sectionId}`;
+
+        return;
+    }
+
+    section.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
     });
 };
 
 const scrollToTop = () => {
+    if (window.location.pathname !== '/') {
+        window.location.href = '/';
+
+        return;
+    }
+
     window.scrollTo({
         top: 0,
         behavior: 'smooth',
@@ -23,30 +31,33 @@ const scrollToTop = () => {
 </script>
 
 <template>
-    <header class="fixed top-0 left-0 z-50 w-full bg-header/8 backdrop-blur-sm">
+    <header
+        class="fixed top-0 left-0 z-50 w-full border-b border-white/10 bg-header/75 backdrop-blur-xl"
+    >
         <div
-            class="mx-auto max-h-20 max-w-[80%] content-center px-6 md:min-h-16 lg:min-h-20"
+            class="mx-auto flex min-h-16 w-full max-w-7xl items-center px-4 sm:px-6 lg:min-h-20"
         >
-            <div class="flex items-center gap-6">
+            <div class="flex w-full items-center gap-6">
                 <!-- Left: Logo -->
                 <div class="flex items-center space-x-3">
                     <div
-                        class="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-primary to-secondary"
+                        class="flex h-10 w-10 items-center justify-center rounded-md bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/20"
                     >
                         <PhHamburger :size="24" weight="fill" />
                     </div>
-                    <span class="font-semibold text-white"
+                    <span
+                        class="text-sm font-bold tracking-wide text-white sm:text-base"
                         >EindejaarsBBQ.nl</span
                     >
                 </div>
 
                 <!-- Center: Navigation -->
                 <nav
-                    class="text-md mr-20 ml-20 hidden items-center space-x-12 text-foreground/400 md:flex"
+                    class="ml-8 hidden items-center gap-8 text-sm font-semibold text-white/70 md:flex"
                 >
                     <a
                         href="#"
-                        class="hover:text-white"
+                        class="transition hover:text-white"
                         @click.prevent="scrollToTop"
                     >
                         Home
@@ -54,7 +65,7 @@ const scrollToTop = () => {
 
                     <a
                         href="#aanmelden"
-                        class="hover:text-white"
+                        class="transition hover:text-white"
                         @click.prevent="scrollToSection('aanmelden')"
                     >
                         Aanmelden
@@ -62,7 +73,7 @@ const scrollToTop = () => {
 
                     <a
                         href="#verenigingen"
-                        class="hover:text-white"
+                        class="transition hover:text-white"
                         @click.prevent="scrollToSection('verenigingen')"
                     >
                         Verenigingen
@@ -76,7 +87,7 @@ const scrollToTop = () => {
                         class="hidden items-center space-x-4 text-white/60 md:flex"
                     >
                         <a
-                            class="text-secondary hover:text-primary"
+                            class="rounded-md p-2 text-secondary transition hover:bg-white/10 hover:text-white"
                             href="https://github.com/Greazi-Times/"
                             target="_blank"
                             rel="noopener noreferrer"

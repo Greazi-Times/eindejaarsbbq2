@@ -21,14 +21,14 @@ class EnrollmentForm
                 TextInput::make('full_name')
                     ->required(),
                 TextInput::make('email')
-                    ->label('Email address')
+                    ->label('E-mailadres')
                     ->email()
                     ->required(),
                 Select::make('type')
                     ->options([
                         'student' => 'Student',
                         'docent' => 'Docent',
-                        'partner-bedrijf' => 'Partner / Bedrijf',
+                        'partner-bedrijf' => 'Partner / bedrijf',
                     ])
                     ->required(),
                 TextInput::make('student_association'),

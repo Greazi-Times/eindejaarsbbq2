@@ -14,12 +14,14 @@ class Event extends Model
         'ends_at',
         'location',
         'description',
+        'student_payment_amount',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'is_active' => 'boolean',
+        'student_payment_amount' => 'decimal:2',
     ];
 
     public function partners(): BelongsToMany

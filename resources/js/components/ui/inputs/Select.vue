@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
     name: undefined,
     label: undefined,
     description: undefined,
-    placeholder: 'Select an option',
+    placeholder: 'Selecteer een optie',
     disabled: false,
     required: false,
     error: undefined,

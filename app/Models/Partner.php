@@ -12,6 +12,11 @@ class Partner extends Model
         'logo',
         'website',
         'description',
+        'students_must_pay',
+    ];
+
+    protected $casts = [
+        'students_must_pay' => 'boolean',
     ];
 
     public function events(): BelongsToMany

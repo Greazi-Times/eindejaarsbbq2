@@ -38,7 +38,7 @@ const emit = defineEmits<{
 }>();
 
 const base =
-    'w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground outline-none transition';
+    'w-full rounded-md border bg-white/[0.07] px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-white/35';
 
 const states =
     'focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50';
@@ -47,7 +47,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const getInternalError = (value: string) => {
     if (props.type === 'email' && value && !emailRegex.test(value)) {
-        return 'Please enter a valid email address.';
+        return 'Vul een geldig e-mailadres in.';
     }
 
     return undefined;
@@ -87,7 +87,7 @@ watch(
     <div>
         <label
             v-if="props.label"
-            class="mb-2 block text-sm font-medium text-foreground"
+            class="mb-2 block text-sm font-semibold text-foreground"
             :for="props.id"
         >
             {{ props.label }}
@@ -117,8 +117,8 @@ watch(
                 base,
                 states,
                 displayedError
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                    : 'border-border focus:border-primary focus:ring-primary/20',
+                    ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20'
+                    : 'border-white/15 hover:border-white/25 focus:border-primary focus:ring-primary/20',
             ]"
             @input="updateValue"
         />
@@ -126,7 +126,7 @@ watch(
         <p
             v-if="displayedError"
             :id="props.id ? `${props.id}-error` : undefined"
-            class="mt-2 text-sm text-red-500"
+            class="mt-2 text-sm font-medium text-red-300"
         >
             {{ displayedError }}
         </p>

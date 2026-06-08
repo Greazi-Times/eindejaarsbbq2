@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Enrollments\Schemas;
 
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Schemas\Schema;
 
 class EnrollmentInfolist
@@ -15,7 +16,7 @@ class EnrollmentInfolist
                     ->label('Event'),
                 TextEntry::make('full_name'),
                 TextEntry::make('email')
-                    ->label('Email address'),
+                    ->label('E-mailadres'),
                 TextEntry::make('type'),
                 TextEntry::make('student_association')
                     ->placeholder('-'),
@@ -33,6 +34,30 @@ class EnrollmentInfolist
                     ->placeholder('-')
                     ->formatStateUsing(fn ($state): string => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT) : (string) $state)
                     ->columnSpanFull(),
+                IconEntry::make('requires_payment')
+                    ->label('Betaling vereist')
+                    ->boolean(),
+                TextEntry::make('payment_status')
+                    ->label('Betalingsstatus')
+                    ->placeholder('-'),
+                TextEntry::make('payment_amount')
+                    ->label('Bedrag')
+                    ->formatStateUsing(fn ($state, $record): string => $state
+                        ? "{$record->payment_currency} {$state}"
+                        : '-'),
+                TextEntry::make('mollie_payment_link_url')
+                    ->label('Betaallink')
+                    ->url(fn ($state) => $state)
+                    ->openUrlInNewTab()
+                    ->placeholder('-')
+                    ->columnSpanFull(),
+                TextEntry::make('mollie_payment_id')
+                    ->label('Mollie betaling')
+                    ->placeholder('-'),
+                TextEntry::make('paid_at')
+                    ->label('Betaald op')
+                    ->dateTime()
+                    ->placeholder('-'),
                 TextEntry::make('notes')
                     ->placeholder('-')
                     ->columnSpanFull(),

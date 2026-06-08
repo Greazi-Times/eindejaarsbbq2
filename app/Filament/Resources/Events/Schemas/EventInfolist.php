@@ -22,6 +22,10 @@ class EventInfolist
                     ->placeholder('-'),
                 TextEntry::make('location')
                     ->placeholder('-'),
+                TextEntry::make('student_payment_amount')
+                    ->label('Studentenprijs')
+                    ->money('EUR')
+                    ->placeholder('-'),
                 TextEntry::make('description')
                     ->placeholder('-')
                     ->columnSpanFull(),

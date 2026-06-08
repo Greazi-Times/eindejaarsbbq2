@@ -61,16 +61,13 @@ const toggleValue = (value: string, checked: boolean) => {
 
 <template>
     <div>
-        <div
-            v-if="props.label"
-            class="mb-3"
-        >
-            <h3 class="text-sm font-medium text-foreground">
+        <div v-if="props.label" class="mb-3">
+            <h3 class="text-sm font-semibold text-foreground">
                 {{ props.label }}
 
                 <span
                     v-if="props.required"
-                    class="text-red-500"
+                    class="text-red-300"
                 >
                     *
                 </span>
@@ -78,13 +75,13 @@ const toggleValue = (value: string, checked: boolean) => {
 
             <p
                 v-if="props.description"
-                class="mt-1 text-sm text-muted-foreground"
+                class="mt-1 text-sm leading-5 text-muted-foreground"
             >
                 {{ props.description }}
             </p>
         </div>
 
-        <div class="space-y-4">
+        <div class="grid gap-3 sm:grid-cols-2">
             <Checkbox
                 v-for="option in props.options"
                 :key="option.value"
@@ -98,7 +95,7 @@ const toggleValue = (value: string, checked: boolean) => {
 
         <p
             v-if="props.error"
-            class="mt-2 text-sm text-red-500"
+            class="mt-2 text-sm font-medium text-red-300"
         >
             {{ props.error }}
         </p>

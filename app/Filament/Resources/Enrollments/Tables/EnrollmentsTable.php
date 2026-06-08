@@ -8,6 +8,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
@@ -25,7 +26,7 @@ class EnrollmentsTable
                 TextColumn::make('full_name')
                     ->searchable(),
                 TextColumn::make('email')
-                    ->label('Email address')
+                    ->label('E-mailadres')
                     ->searchable(),
                 TextColumn::make('type')
                     ->searchable(),
@@ -41,6 +42,27 @@ class EnrollmentsTable
                 TextColumn::make('guest_amount')
                     ->numeric()
                     ->sortable(),
+                IconColumn::make('requires_payment')
+                    ->label('Betaling vereist')
+                    ->boolean()
+                    ->sortable(),
+                TextColumn::make('payment_status')
+                    ->label('Betalingsstatus')
+                    ->badge()
+                    ->placeholder('-')
+                    ->sortable(),
+                TextColumn::make('payment_amount')
+                    ->label('Bedrag')
+                    ->formatStateUsing(fn ($state, $record): string => $state
+                        ? "{$record->payment_currency} {$state}"
+                        : '-')
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('paid_at')
+                    ->label('Betaald op')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -59,17 +81,17 @@ class EnrollmentsTable
             ])
             ->toolbarActions([
                 Action::make('exportCsv')
-                    ->label('Export CSV')
+                    ->label('CSV exporteren')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->action(function () {
                         return response()->streamDownload(function (): void {
                             $handle = fopen('php://output', 'w');
 
                             fputcsv($handle, [
-                                'Name',
+                                'Naam',
                                 'Type',
-                                'People',
-                                'Dieet wishes',
+                                'Personen',
+                                'Dieetwensen',
                             ]);
 
                             Enrollment::query()
@@ -89,7 +111,7 @@ class EnrollmentsTable
                                             $enrollment->full_name,
                                             match ($enrollment->type) {
                                                 'student' => 'Student',
-                                                'docent' => 'Teacher',
+                                                'docent' => 'Docent',
                                                 'partner-bedrijf' => 'Partner',
                                                 default => Str::headline((string) $enrollment->type),
                                             },

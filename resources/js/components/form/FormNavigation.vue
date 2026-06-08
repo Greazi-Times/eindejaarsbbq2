@@ -6,13 +6,17 @@ interface Props {
     previousLabel?: string;
     showPrevious?: boolean;
     showNext?: boolean;
+    nextDisabled?: boolean;
+    nextLoading?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
-    nextLabel: 'Continue',
-    previousLabel: 'Back',
+    nextLabel: 'Verder',
+    previousLabel: 'Terug',
     showPrevious: false,
     showNext: true,
+    nextDisabled: false,
+    nextLoading: false,
 });
 
 const emit = defineEmits<{
@@ -22,7 +26,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class="flex shrink-0 items-center justify-between pt-8">
+    <div
+        class="mt-2 flex shrink-0 items-center justify-between border-t border-white/10 pt-6"
+    >
         <div>
             <Button
                 v-if="showPrevious"
@@ -37,6 +43,8 @@ const emit = defineEmits<{
             <Button
                 v-if="showNext"
                 variant="primary"
+                :disabled="nextDisabled"
+                :loading="nextLoading"
                 @click="emit('next')"
             >
                 {{ nextLabel }}
