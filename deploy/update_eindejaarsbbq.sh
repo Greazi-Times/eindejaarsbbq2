@@ -8,6 +8,7 @@ echo "Starting EindejaarsBBQ update..."
 
 cd "$PROJECT_DIR" || { echo "Project directory not found: $PROJECT_DIR"; exit 1; }
 
+php artisan config:clear
 php artisan down || true
 
 restore_app() {
@@ -24,6 +25,7 @@ echo "Installing PHP dependencies..."
 composer install --no-dev --optimize-autoloader --no-interaction
 
 echo "Clearing old Laravel caches..."
+php artisan config:clear
 php artisan optimize:clear
 
 echo "Building frontend assets..."

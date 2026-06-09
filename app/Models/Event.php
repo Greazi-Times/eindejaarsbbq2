@@ -27,7 +27,6 @@ class Event extends Model
     public function partners(): BelongsToMany
     {
         return $this->belongsToMany(Partner::class)
-            ->withPivot('type')
             ->withTimestamps();
     }
 
