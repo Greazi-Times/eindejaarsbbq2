@@ -20,14 +20,12 @@ class Event extends Model
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
-        'is_active' => 'boolean',
         'student_payment_amount' => 'decimal:2',
     ];
 
     public function partners(): BelongsToMany
     {
-        return $this->belongsToMany(Partner::class)
-            ->withTimestamps();
+        return $this->belongsToMany(Partner::class);
     }
 
     public function verenigingen(): BelongsToMany
