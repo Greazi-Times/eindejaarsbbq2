@@ -3,9 +3,25 @@
 use App\Http\Controllers\EnrollmentController;
 use App\Models\Event;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 Route::get('/', function () {
+    $logoUrl = static function (?string $logo): ?string {
+        if (! $logo) {
+            return null;
+        }
+
+        if (
+            str_starts_with($logo, 'http://')
+            || str_starts_with($logo, 'https://')
+            || str_starts_with($logo, '/')
+        ) {
+            return $logo;
+        }
+
+        return Storage::disk('public')->url($logo);
+    };
 
     $activeEvent = Event::query()
         ->with([
@@ -28,7 +44,7 @@ Route::get('/', function () {
             'partners' => $activeEvent->partners->map(fn ($partner) => [
                 'id' => $partner->id,
                 'name' => $partner->name,
-                'logo' => $partner->logo,
+                'logo' => $logoUrl($partner->logo),
                 'website' => $partner->website,
                 'students_must_pay' => $partner->students_must_pay,
             ])->values(),
@@ -36,7 +52,7 @@ Route::get('/', function () {
             'verenigingen' => $activeEvent->verenigingen->map(fn ($vereniging) => [
                 'id' => $vereniging->id,
                 'name' => $vereniging->name,
-                'logo' => $vereniging->logo,
+                'logo' => $logoUrl($vereniging->logo),
                 'website' => $vereniging->website,
                 'students_must_pay' => $vereniging->students_must_pay,
             ])->values(),

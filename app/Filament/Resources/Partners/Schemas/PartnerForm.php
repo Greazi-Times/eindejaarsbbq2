@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\Partners\Schemas;
 
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
@@ -18,7 +18,9 @@ class PartnerForm
                     ->required(),
                 FileUpload::make('logo')
                     ->image()
+                    ->disk('public')
                     ->directory('partners')
+                    ->visibility('public')
                     ->imageEditor(),
                 TextInput::make('website')
                     ->url(),
