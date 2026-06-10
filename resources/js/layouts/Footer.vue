@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhGithubLogo } from '@phosphor-icons/vue';
+import { PhGithubLogo, PhHamburger } from '@phosphor-icons/vue';
 
 defineProps<{
     partners?: {
@@ -26,8 +26,10 @@ defineProps<{
                 <div class="flex flex-col gap-6 md:col-span-2">
                     <div class="flex items-center gap-3">
                         <div
-                            class="h-9 w-9 rounded-md bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/20"
-                        ></div>
+                            class="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/20"
+                        >
+                            <PhHamburger :size="22" weight="fill" />
+                        </div>
                         <span class="text-lg font-semibold"
                             >Eindejaars BBQ</span
                         >
