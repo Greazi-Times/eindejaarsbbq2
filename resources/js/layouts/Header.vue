@@ -35,27 +35,27 @@ const scrollToTop = () => {
         class="fixed top-0 left-0 z-50 w-full border-b border-white/10 bg-header/95 backdrop-blur-xl"
     >
         <div
-            class="flex min-h-16 w-full items-center px-[clamp(1rem,2vw,2rem)] lg:min-h-20"
+            class="mx-auto flex min-h-16 w-[88%] items-center lg:min-h-[4.5rem]"
         >
             <div
-                class="flex w-full min-w-0 items-center gap-[clamp(1rem,2vw,1.5rem)]"
+                class="flex w-full min-w-0 items-center gap-[clamp(0.75rem,1.5vw,1.25rem)]"
             >
                 <!-- Left: Logo -->
-                <div class="flex min-w-0 items-center gap-3">
+                <div class="flex min-w-0 items-center gap-2.5">
                     <div
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/20"
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/20 lg:h-10 lg:w-10"
                     >
-                        <PhHamburger :size="24" weight="fill" />
+                        <PhHamburger :size="22" weight="fill" />
                     </div>
                     <span
-                        class="truncate text-sm font-bold tracking-wide text-white sm:text-base"
+                        class="truncate text-sm font-bold tracking-wide text-white lg:text-base"
                         >EindejaarsBBQ.nl</span
                     >
                 </div>
 
                 <!-- Center: Navigation -->
                 <nav
-                    class="ml-[clamp(2rem,3vw,3.75rem)] hidden items-center gap-[clamp(1.75rem,2.5vw,3rem)] text-sm font-semibold text-white/70 lg:flex"
+                    class="ml-[clamp(1.25rem,2.25vw,3rem)] hidden items-center gap-[clamp(1.25rem,2vw,2.25rem)] text-[0.8125rem] font-semibold text-white/70 lg:flex xl:text-sm"
                 >
                     <a
                         href="#"
@@ -86,7 +86,7 @@ const scrollToTop = () => {
                 <div class="ml-auto flex items-center space-x-6">
                     <!-- Icons -->
                     <div
-                        class="hidden items-center space-x-4 text-white/60 lg:flex"
+                        class="hidden items-center space-x-3 text-white/60 lg:flex"
                     >
                         <a
                             class="rounded-md p-2 text-secondary transition hover:bg-white/10 hover:text-white"
@@ -94,7 +94,7 @@ const scrollToTop = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                         >
-                            <PhGithubLogo :size="24" />
+                            <PhGithubLogo :size="22" />
                         </a>
                     </div>
                 </div>
