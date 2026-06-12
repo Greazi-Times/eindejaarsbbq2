@@ -32,12 +32,14 @@ const scrollToTop = () => {
 
 <template>
     <header
-        class="fixed top-0 left-0 z-50 w-full border-b border-white/10 bg-header/90 backdrop-blur-xl"
+        class="fixed top-0 left-0 z-50 w-full border-b border-white/10 bg-header/95 backdrop-blur-xl"
     >
         <div
-            class="flex min-h-16 w-full items-center px-4 sm:px-6 lg:min-h-20 lg:px-8"
+            class="flex min-h-16 w-full items-center px-[clamp(1rem,2vw,2rem)] lg:min-h-20"
         >
-            <div class="flex w-full min-w-0 items-center gap-4 lg:gap-6">
+            <div
+                class="flex w-full min-w-0 items-center gap-[clamp(1rem,2vw,1.5rem)]"
+            >
                 <!-- Left: Logo -->
                 <div class="flex min-w-0 items-center gap-3">
                     <div
@@ -53,7 +55,7 @@ const scrollToTop = () => {
 
                 <!-- Center: Navigation -->
                 <nav
-                    class="ml-4 hidden items-center gap-5 text-sm font-semibold text-white/70 lg:flex xl:ml-8 xl:gap-8"
+                    class="ml-[clamp(2rem,3vw,3.75rem)] hidden items-center gap-[clamp(1.75rem,2.5vw,3rem)] text-sm font-semibold text-white/70 lg:flex"
                 >
                     <a
                         href="#"
