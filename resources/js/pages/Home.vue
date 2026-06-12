@@ -1176,7 +1176,7 @@ const addToGoogleCalendar = () => {
                                 <CheckboxGroup
                                     v-model="selectedPartnerOrganization"
                                     class="md:col-span-2"
-                                    label="Partner of vereniging"
+                                    label="Partner van"
                                     description="Selecteer de partner of vereniging van de Eindejaars BBQ waar je bij hoort."
                                     :error="
                                         stepErrors.partnerOrganization ||
