@@ -17,6 +17,7 @@ class Enrollment extends Model
         'education',
         'custom_education',
         'company_name',
+        'partner_organization_type',
         'guest_amount',
         'dietary_preferences',
         'notes',

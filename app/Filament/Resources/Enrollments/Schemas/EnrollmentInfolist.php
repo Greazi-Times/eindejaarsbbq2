@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Enrollments\Schemas;
 
-use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
 class EnrollmentInfolist
@@ -26,7 +26,16 @@ class EnrollmentInfolist
                     ->placeholder('-'),
                 TextEntry::make('custom_education')
                     ->placeholder('-'),
+                TextEntry::make('partner_organization_type')
+                    ->label('Soort organisatie')
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'partner' => 'Partner',
+                        'vereniging' => 'Vereniging',
+                        default => '-',
+                    })
+                    ->placeholder('-'),
                 TextEntry::make('company_name')
+                    ->label('Organisatie')
                     ->placeholder('-'),
                 TextEntry::make('guest_amount')
                     ->numeric(),

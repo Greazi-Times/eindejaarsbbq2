@@ -16,7 +16,7 @@ class EnrollmentController extends Controller
     public function store(Request $request, MolliePaymentService $mollie): RedirectResponse|Response
     {
         $event = Event::query()
-            ->with('verenigingen')
+            ->with(['partners', 'verenigingen'])
             ->whereNotNull('starts_at')
             ->where('starts_at', '>=', now())
             ->orderBy('starts_at')
@@ -41,6 +41,7 @@ class EnrollmentController extends Controller
                 'education' => ['nullable', 'string', 'max:255'],
                 'custom_education' => ['nullable', 'string', 'max:255'],
 
+                'partner_organization_type' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'in:partner,vereniging'],
                 'company_name' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
 
                 'guest_amount' => ['required', 'integer', 'min:1', 'max:3'],
@@ -53,7 +54,9 @@ class EnrollmentController extends Controller
                 'email.email' => 'Vul een geldig e-mailadres in.',
                 'type.required' => 'Selecteer een type.',
                 'type.in' => 'Selecteer een geldig type.',
-                'company_name.required_if' => 'Bedrijfsnaam is verplicht voor partners en bedrijven.',
+                'partner_organization_type.required_if' => 'Selecteer of je aanmelding bij een partner of vereniging hoort.',
+                'partner_organization_type.in' => 'Selecteer een geldig organisatietype.',
+                'company_name.required_if' => 'Organisatienaam is verplicht voor partners en verenigingen.',
                 'guest_amount.required' => 'Aantal personen is verplicht.',
                 'guest_amount.integer' => 'Aantal personen moet een getal zijn.',
                 'guest_amount.min' => 'Aantal personen moet minimaal 1 zijn.',

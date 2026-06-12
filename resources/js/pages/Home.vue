@@ -44,6 +44,7 @@ const selectedTypes = ref<string[]>([]);
 
 const selectedStudentAssociation = ref<string[]>([]);
 const selectedEducation = ref<string[]>([]);
+const selectedPartnerOrganizationType = ref<string[]>([]);
 const selectedPartnerCompany = ref<string[]>([]);
 
 const customStudentAssociation = ref('');
@@ -237,10 +238,15 @@ const studentAssociationOptions = computed(() => [
 ]);
 
 const partnerCompanyOptions = computed(() => [
-    ...eventPartners.value.map((partner) => ({
-        label: partner.name,
-        value: partner.name,
-    })),
+    ...(selectedPartnerOrganizationType.value[0] === 'vereniging'
+        ? eventVerenigingen.value.map((vereniging) => ({
+              label: vereniging.name,
+              value: vereniging.name,
+          }))
+        : eventPartners.value.map((partner) => ({
+              label: partner.name,
+              value: partner.name,
+          }))),
     customOption,
 ]);
 
@@ -248,6 +254,7 @@ const getImageUrl = (logo: string | null) => {
     if (!logo) {
         return null;
     }
+
     if (
         logo.startsWith('http://') ||
         logo.startsWith('https://') ||
@@ -255,6 +262,7 @@ const getImageUrl = (logo: string | null) => {
     ) {
         return logo;
     }
+
     return `/storage/${logo}`;
 };
 
@@ -381,17 +389,22 @@ const validateStep = () => {
 
         if (
             selectedTypes.value.includes('partner-bedrijf') &&
-            !selectedPartnerCompany.value.length
+            !selectedPartnerOrganizationType.value.length
         ) {
-            stepErrors.value.partnerCompany =
-                'Selecteer een partner of bedrijf.';
+            stepErrors.value.partnerOrganizationType =
+                'Selecteer partner of vereniging.';
         }
 
         if (
             selectedTypes.value.includes('partner-bedrijf') &&
-            !companyName.value.trim()
+            !selectedPartnerCompany.value.length
         ) {
-            stepErrors.value.companyName = 'Vul je bedrijfsnaam in.';
+            stepErrors.value.partnerCompany =
+                'Selecteer een partner of vereniging.';
+        }
+
+        if (hasCustomPartnerCompany.value && !companyName.value.trim()) {
+            stepErrors.value.companyName = 'Vul je organisatie in.';
         }
     }
 
@@ -415,6 +428,10 @@ const hasCustomEducation = computed(() => {
     return selectedEducation.value.includes('anders');
 });
 
+const hasCustomPartnerCompany = computed(() => {
+    return selectedPartnerCompany.value.includes('anders');
+});
+
 const selectedStudentAssociationName = computed(() => {
     if (selectedStudentAssociation.value[0] === 'anders') {
         return customStudentAssociation.value.trim();
@@ -424,7 +441,20 @@ const selectedStudentAssociationName = computed(() => {
 });
 
 const selectedPartnerCompanyName = computed(() => {
+    if (selectedPartnerCompany.value[0] === 'anders') {
+        return companyName.value.trim();
+    }
+
     return selectedPartnerCompany.value[0] || '';
+});
+
+const selectedPartnerOrganizationTypeLabel = computed(() => {
+    return (
+        {
+            partner: 'Partner',
+            vereniging: 'Vereniging',
+        }[selectedPartnerOrganizationType.value[0]] || ''
+    );
 });
 
 const selectedEducationName = computed(() => {
@@ -454,6 +484,7 @@ const fieldErrorKeys = [
     'education',
     'customEducation',
     'companyName',
+    'partnerOrganizationType',
     'partnerCompany',
 ];
 
@@ -490,9 +521,21 @@ watch(selectedTypes, (types) => {
     }
 
     if (!types.includes('partner-bedrijf')) {
+        selectedPartnerOrganizationType.value = [];
         selectedPartnerCompany.value = [];
         companyName.value = '';
         guestAmount.value = '1';
+    }
+});
+
+watch(selectedPartnerOrganizationType, () => {
+    selectedPartnerCompany.value = [];
+    companyName.value = '';
+});
+
+watch(selectedPartnerCompany, (companies) => {
+    if (!companies.includes('anders')) {
+        companyName.value = '';
     }
 });
 
@@ -540,12 +583,12 @@ const reviewDetails = computed(() => {
             value: selectedEducationName.value,
         },
         {
-            label: 'Partner / bedrijf',
-            value: selectedPartnerCompanyName.value,
+            label: 'Soort organisatie',
+            value: selectedPartnerOrganizationTypeLabel.value,
         },
         {
-            label: 'Bedrijfsnaam',
-            value: companyName.value,
+            label: 'Partner / vereniging',
+            value: selectedPartnerCompanyName.value,
         },
         {
             label: 'Aantal personen',
@@ -577,6 +620,7 @@ const resetEnrollmentForm = () => {
     selectedTypes.value = [];
     selectedStudentAssociation.value = [];
     selectedEducation.value = [];
+    selectedPartnerOrganizationType.value = [];
     selectedPartnerCompany.value = [];
     customStudentAssociation.value = '';
     customEducation.value = '';
@@ -607,7 +651,9 @@ const submitEnrollment = () => {
                     : null,
             education: selectedEducation.value[0] || null,
             custom_education: customEducation.value || null,
-            company_name: companyName.value || null,
+            partner_organization_type:
+                selectedPartnerOrganizationType.value[0] || null,
+            company_name: selectedPartnerCompanyName.value || null,
             guest_amount: Number(guestAmount.value),
             dietary_preferences: guestDietaryPreferences.value,
         },
@@ -1078,11 +1124,56 @@ const addToGoogleCalendar = () => {
                             <FormGrid
                                 v-if="selectedTypes.includes('partner-bedrijf')"
                             >
+                                <CheckboxGroup
+                                    v-model="selectedPartnerOrganizationType"
+                                    class="md:col-span-2"
+                                    label="Soort organisatie"
+                                    description="Kies of je aanmelding bij een partner of vereniging hoort."
+                                    :error="stepErrors.partnerOrganizationType"
+                                    required
+                                    :max="1"
+                                    :options="[
+                                        {
+                                            label: 'Partner',
+                                            value: 'partner',
+                                        },
+                                        {
+                                            label: 'Vereniging',
+                                            value: 'vereniging',
+                                        },
+                                    ]"
+                                />
+
+                                <CheckboxGroup
+                                    v-if="
+                                        selectedPartnerOrganizationType.length
+                                    "
+                                    v-model="selectedPartnerCompany"
+                                    class="md:col-span-2"
+                                    :label="
+                                        selectedPartnerOrganizationType[0] ===
+                                        'vereniging'
+                                            ? 'Vereniging'
+                                            : 'Partner'
+                                    "
+                                    :description="
+                                        selectedPartnerOrganizationType[0] ===
+                                        'vereniging'
+                                            ? 'Selecteer je vereniging.'
+                                            : 'Selecteer je partner.'
+                                    "
+                                    :error="stepErrors.partnerCompany"
+                                    required
+                                    :max="1"
+                                    :options="partnerCompanyOptions"
+                                />
+
                                 <Input
+                                    v-if="hasCustomPartnerCompany"
                                     v-model="companyName"
                                     name="companyName"
-                                    label="Bedrijfsnaam"
-                                    placeholder="Vul je bedrijfsnaam in"
+                                    label="Andere organisatie"
+                                    placeholder="Vul de naam in"
                                     :error="stepErrors.companyName"
                                     required
                                 />
@@ -1096,17 +1187,6 @@ const addToGoogleCalendar = () => {
                                     min="1"
                                     max="3"
                                     required
-                                />
-
-                                <CheckboxGroup
-                                    v-model="selectedPartnerCompany"
-                                    class="md:col-span-2"
-                                    label="Partner / bedrijf"
-                                    description="Selecteer je partner of bedrijf."
-                                    :error="stepErrors.partnerCompany"
-                                    required
-                                    :max="1"
-                                    :options="partnerCompanyOptions"
                                 />
                             </FormGrid>
                         </FormSection>

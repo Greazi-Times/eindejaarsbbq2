@@ -36,7 +36,17 @@ class EnrollmentsTable
                 TextColumn::make('education')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('partner_organization_type')
+                    ->label('Soort organisatie')
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'partner' => 'Partner',
+                        'vereniging' => 'Vereniging',
+                        default => '-',
+                    })
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('company_name')
+                    ->label('Organisatie')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('guest_amount')
@@ -90,6 +100,8 @@ class EnrollmentsTable
                             fputcsv($handle, [
                                 'Naam',
                                 'Type',
+                                'Soort organisatie',
+                                'Organisatie',
                                 'Personen',
                                 'Dieetwensen',
                             ]);
@@ -115,6 +127,12 @@ class EnrollmentsTable
                                                 'partner-bedrijf' => 'Partner',
                                                 default => Str::headline((string) $enrollment->type),
                                             },
+                                            match ($enrollment->partner_organization_type) {
+                                                'partner' => 'Partner',
+                                                'vereniging' => 'Vereniging',
+                                                default => '-',
+                                            },
+                                            $enrollment->company_name ?: '-',
                                             $enrollment->guest_amount,
                                             $dietaryPreferences ?: '-',
                                         ]);

@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\Enrollments\Schemas;
 
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
 class EnrollmentForm
@@ -35,6 +35,12 @@ class EnrollmentForm
                 TextInput::make('custom_student_association'),
                 TextInput::make('education'),
                 TextInput::make('custom_education'),
+                Select::make('partner_organization_type')
+                    ->label('Soort organisatie')
+                    ->options([
+                        'partner' => 'Partner',
+                        'vereniging' => 'Vereniging',
+                    ]),
                 TextInput::make('company_name'),
                 TextInput::make('guest_amount')
                     ->required()
