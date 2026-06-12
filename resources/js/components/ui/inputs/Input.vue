@@ -8,6 +8,7 @@ interface Props {
     id?: string;
     name?: string;
     label?: string;
+    description?: string;
     error?: string;
     required?: boolean;
     min?: number | string;
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
     id: undefined,
     name: undefined,
     label: undefined,
+    description: undefined,
     error: undefined,
     required: false,
     min: undefined,
@@ -56,6 +58,24 @@ const getInternalError = (value: string) => {
 const internalError = computed(() => getInternalError(props.modelValue));
 
 const displayedError = computed(() => internalError.value || props.error);
+
+const describedBy = computed(() => {
+    if (!props.id) {
+        return undefined;
+    }
+
+    const ids: string[] = [];
+
+    if (props.description) {
+        ids.push(`${props.id}-description`);
+    }
+
+    if (displayedError.value) {
+        ids.push(`${props.id}-error`);
+    }
+
+    return ids.length ? ids.join(' ') : undefined;
+});
 
 const emitValidation = (value: string) => {
     const error = getInternalError(value);
@@ -100,6 +120,14 @@ watch(
             </span>
         </label>
 
+        <p
+            v-if="props.description"
+            :id="props.id ? `${props.id}-description` : undefined"
+            class="mb-2 text-sm leading-5 text-muted-foreground"
+        >
+            {{ props.description }}
+        </p>
+
         <input
             :id="props.id"
             :name="props.name"
@@ -112,7 +140,7 @@ watch(
             :max="props.max"
             :aria-disabled="props.disabled"
             :aria-invalid="Boolean(displayedError)"
-            :aria-describedby="displayedError && props.id ? `${props.id}-error` : undefined"
+            :aria-describedby="describedBy"
             :class="[
                 base,
                 states,

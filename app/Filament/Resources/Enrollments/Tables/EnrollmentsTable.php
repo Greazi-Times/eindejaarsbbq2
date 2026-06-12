@@ -37,7 +37,7 @@ class EnrollmentsTable
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('partner_organization_type')
-                    ->label('Soort organisatie')
+                    ->label('Soort BBQ-organisatie')
                     ->formatStateUsing(fn (?string $state): string => match ($state) {
                         'partner' => 'Partner',
                         'vereniging' => 'Vereniging',
@@ -45,8 +45,12 @@ class EnrollmentsTable
                     })
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('partner_organization_name')
+                    ->label('Partner / vereniging BBQ')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('company_name')
-                    ->label('Organisatie')
+                    ->label('Bedrijfsnaam')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('guest_amount')
@@ -100,8 +104,9 @@ class EnrollmentsTable
                             fputcsv($handle, [
                                 'Naam',
                                 'Type',
-                                'Soort organisatie',
-                                'Organisatie',
+                                'Soort BBQ-organisatie',
+                                'Partner / vereniging BBQ',
+                                'Bedrijfsnaam',
                                 'Personen',
                                 'Dieetwensen',
                             ]);
@@ -132,6 +137,7 @@ class EnrollmentsTable
                                                 'vereniging' => 'Vereniging',
                                                 default => '-',
                                             },
+                                            $enrollment->partner_organization_name ?: '-',
                                             $enrollment->company_name ?: '-',
                                             $enrollment->guest_amount,
                                             $dietaryPreferences ?: '-',

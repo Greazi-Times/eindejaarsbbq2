@@ -44,8 +44,7 @@ const selectedTypes = ref<string[]>([]);
 
 const selectedStudentAssociation = ref<string[]>([]);
 const selectedEducation = ref<string[]>([]);
-const selectedPartnerOrganizationType = ref<string[]>([]);
-const selectedPartnerCompany = ref<string[]>([]);
+const selectedPartnerOrganization = ref<string[]>([]);
 
 const customStudentAssociation = ref('');
 const customEducation = ref('');
@@ -237,18 +236,37 @@ const studentAssociationOptions = computed(() => [
     customOption,
 ]);
 
-const partnerCompanyOptions = computed(() => [
-    ...(selectedPartnerOrganizationType.value[0] === 'vereniging'
-        ? eventVerenigingen.value.map((vereniging) => ({
-              label: vereniging.name,
-              value: vereniging.name,
-          }))
-        : eventPartners.value.map((partner) => ({
-              label: partner.name,
-              value: partner.name,
-          }))),
-    customOption,
+const partnerOrganizationOptions = computed(() => [
+    ...eventPartners.value.map((partner) => ({
+        label: partner.name,
+        value: `partner:${partner.id}`,
+        name: partner.name,
+        type: 'partner',
+        description: 'Partner van de Eindejaars BBQ',
+    })),
+    ...eventVerenigingen.value.map((vereniging) => ({
+        label: vereniging.name,
+        value: `vereniging:${vereniging.id}`,
+        name: vereniging.name,
+        type: 'vereniging',
+        description: 'Vereniging van de Eindejaars BBQ',
+    })),
 ]);
+
+const guestAmountOptions = [
+    {
+        label: '1 persoon',
+        value: '1',
+    },
+    {
+        label: '2 personen',
+        value: '2',
+    },
+    {
+        label: '3 personen',
+        value: '3',
+    },
+];
 
 const getImageUrl = (logo: string | null) => {
     if (!logo) {
@@ -389,22 +407,17 @@ const validateStep = () => {
 
         if (
             selectedTypes.value.includes('partner-bedrijf') &&
-            !selectedPartnerOrganizationType.value.length
+            !companyName.value.trim()
         ) {
-            stepErrors.value.partnerOrganizationType =
-                'Selecteer partner of vereniging.';
+            stepErrors.value.companyName = 'Vul de naam van het bedrijf in.';
         }
 
         if (
             selectedTypes.value.includes('partner-bedrijf') &&
-            !selectedPartnerCompany.value.length
+            !selectedPartnerOrganization.value.length
         ) {
-            stepErrors.value.partnerCompany =
+            stepErrors.value.partnerOrganization =
                 'Selecteer een partner of vereniging.';
-        }
-
-        if (hasCustomPartnerCompany.value && !companyName.value.trim()) {
-            stepErrors.value.companyName = 'Vul je organisatie in.';
         }
     }
 
@@ -428,8 +441,11 @@ const hasCustomEducation = computed(() => {
     return selectedEducation.value.includes('anders');
 });
 
-const hasCustomPartnerCompany = computed(() => {
-    return selectedPartnerCompany.value.includes('anders');
+const selectedGuestAmount = computed({
+    get: () => [guestAmount.value],
+    set: (value: string[]) => {
+        guestAmount.value = value[0] || '1';
+    },
 });
 
 const selectedStudentAssociationName = computed(() => {
@@ -440,12 +456,12 @@ const selectedStudentAssociationName = computed(() => {
     return selectedStudentAssociation.value[0] || '';
 });
 
-const selectedPartnerCompanyName = computed(() => {
-    if (selectedPartnerCompany.value[0] === 'anders') {
-        return companyName.value.trim();
-    }
-
-    return selectedPartnerCompany.value[0] || '';
+const selectedPartnerOrganizationDetails = computed(() => {
+    return (
+        partnerOrganizationOptions.value.find(
+            (option) => option.value === selectedPartnerOrganization.value[0],
+        ) || null
+    );
 });
 
 const selectedPartnerOrganizationTypeLabel = computed(() => {
@@ -453,8 +469,16 @@ const selectedPartnerOrganizationTypeLabel = computed(() => {
         {
             partner: 'Partner',
             vereniging: 'Vereniging',
-        }[selectedPartnerOrganizationType.value[0]] || ''
+        }[selectedPartnerOrganizationDetails.value?.type || ''] || ''
     );
+});
+
+const selectedPartnerOrganizationName = computed(() => {
+    return selectedPartnerOrganizationDetails.value?.name || '';
+});
+
+const selectedPartnerOrganizationType = computed(() => {
+    return selectedPartnerOrganizationDetails.value?.type || '';
 });
 
 const selectedEducationName = computed(() => {
@@ -484,8 +508,13 @@ const fieldErrorKeys = [
     'education',
     'customEducation',
     'companyName',
+    'company_name',
     'partnerOrganizationType',
-    'partnerCompany',
+    'partner_organization_type',
+    'partnerOrganization',
+    'partner_organization_name',
+    'guestAmount',
+    'guest_amount',
 ];
 
 const formErrors = computed(() => {
@@ -521,21 +550,9 @@ watch(selectedTypes, (types) => {
     }
 
     if (!types.includes('partner-bedrijf')) {
-        selectedPartnerOrganizationType.value = [];
-        selectedPartnerCompany.value = [];
+        selectedPartnerOrganization.value = [];
         companyName.value = '';
         guestAmount.value = '1';
-    }
-});
-
-watch(selectedPartnerOrganizationType, () => {
-    selectedPartnerCompany.value = [];
-    companyName.value = '';
-});
-
-watch(selectedPartnerCompany, (companies) => {
-    if (!companies.includes('anders')) {
-        companyName.value = '';
     }
 });
 
@@ -583,12 +600,16 @@ const reviewDetails = computed(() => {
             value: selectedEducationName.value,
         },
         {
-            label: 'Soort organisatie',
+            label: 'Naam bedrijf',
+            value: companyName.value,
+        },
+        {
+            label: 'Soort BBQ-organisatie',
             value: selectedPartnerOrganizationTypeLabel.value,
         },
         {
-            label: 'Partner / vereniging',
-            value: selectedPartnerCompanyName.value,
+            label: 'Partner / vereniging BBQ',
+            value: selectedPartnerOrganizationName.value,
         },
         {
             label: 'Aantal personen',
@@ -620,8 +641,7 @@ const resetEnrollmentForm = () => {
     selectedTypes.value = [];
     selectedStudentAssociation.value = [];
     selectedEducation.value = [];
-    selectedPartnerOrganizationType.value = [];
-    selectedPartnerCompany.value = [];
+    selectedPartnerOrganization.value = [];
     customStudentAssociation.value = '';
     customEducation.value = '';
     companyName.value = '';
@@ -652,8 +672,10 @@ const submitEnrollment = () => {
             education: selectedEducation.value[0] || null,
             custom_education: customEducation.value || null,
             partner_organization_type:
-                selectedPartnerOrganizationType.value[0] || null,
-            company_name: selectedPartnerCompanyName.value || null,
+                selectedPartnerOrganizationType.value || null,
+            partner_organization_name:
+                selectedPartnerOrganizationName.value || null,
+            company_name: companyName.value || null,
             guest_amount: Number(guestAmount.value),
             dietary_preferences: guestDietaryPreferences.value,
         },
@@ -1124,69 +1146,46 @@ const addToGoogleCalendar = () => {
                             <FormGrid
                                 v-if="selectedTypes.includes('partner-bedrijf')"
                             >
-                                <CheckboxGroup
-                                    v-model="selectedPartnerOrganizationType"
-                                    class="md:col-span-2"
-                                    label="Soort organisatie"
-                                    description="Kies of je aanmelding bij een partner of vereniging hoort."
-                                    :error="stepErrors.partnerOrganizationType"
-                                    required
-                                    :max="1"
-                                    :options="[
-                                        {
-                                            label: 'Partner',
-                                            value: 'partner',
-                                        },
-                                        {
-                                            label: 'Vereniging',
-                                            value: 'vereniging',
-                                        },
-                                    ]"
-                                />
-
-                                <CheckboxGroup
-                                    v-if="
-                                        selectedPartnerOrganizationType.length
-                                    "
-                                    v-model="selectedPartnerCompany"
-                                    class="md:col-span-2"
-                                    :label="
-                                        selectedPartnerOrganizationType[0] ===
-                                        'vereniging'
-                                            ? 'Vereniging'
-                                            : 'Partner'
-                                    "
-                                    :description="
-                                        selectedPartnerOrganizationType[0] ===
-                                        'vereniging'
-                                            ? 'Selecteer je vereniging.'
-                                            : 'Selecteer je partner.'
-                                    "
-                                    :error="stepErrors.partnerCompany"
-                                    required
-                                    :max="1"
-                                    :options="partnerCompanyOptions"
-                                />
-
                                 <Input
-                                    v-if="hasCustomPartnerCompany"
                                     v-model="companyName"
+                                    class="md:col-span-2"
                                     name="companyName"
-                                    label="Andere organisatie"
-                                    placeholder="Vul de naam in"
-                                    :error="stepErrors.companyName"
+                                    label="Naam van het bedrijf"
+                                    placeholder="Vul de bedrijfsnaam in"
+                                    :error="
+                                        stepErrors.companyName ||
+                                        stepErrors.company_name
+                                    "
                                     required
                                 />
 
-                                <Input
-                                    v-model="guestAmount"
-                                    name="guestAmount"
-                                    type="number"
+                                <CheckboxGroup
+                                    v-model="selectedGuestAmount"
+                                    class="md:col-span-2"
                                     label="Aantal personen"
-                                    placeholder="1"
-                                    min="1"
-                                    max="3"
+                                    description="Maximaal 3 personen."
+                                    :error="
+                                        stepErrors.guestAmount ||
+                                        stepErrors.guest_amount
+                                    "
                                     required
+                                    :max="1"
+                                    :options="guestAmountOptions"
+                                />
+
+                                <CheckboxGroup
+                                    v-model="selectedPartnerOrganization"
+                                    class="md:col-span-2"
+                                    label="Partner of vereniging"
+                                    description="Selecteer de partner of vereniging van de Eindejaars BBQ waar je bij hoort."
+                                    :error="
+                                        stepErrors.partnerOrganization ||
+                                        stepErrors.partner_organization_name ||
+                                        stepErrors.partner_organization_type
+                                    "
+                                    required
+                                    :max="1"
+                                    :options="partnerOrganizationOptions"
                                 />
                             </FormGrid>
                         </FormSection>

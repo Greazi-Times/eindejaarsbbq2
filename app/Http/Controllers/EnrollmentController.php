@@ -42,6 +42,7 @@ class EnrollmentController extends Controller
                 'custom_education' => ['nullable', 'string', 'max:255'],
 
                 'partner_organization_type' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'in:partner,vereniging'],
+                'partner_organization_name' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
                 'company_name' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
 
                 'guest_amount' => ['required', 'integer', 'min:1', 'max:3'],
@@ -56,13 +57,23 @@ class EnrollmentController extends Controller
                 'type.in' => 'Selecteer een geldig type.',
                 'partner_organization_type.required_if' => 'Selecteer of je aanmelding bij een partner of vereniging hoort.',
                 'partner_organization_type.in' => 'Selecteer een geldig organisatietype.',
-                'company_name.required_if' => 'Organisatienaam is verplicht voor partners en verenigingen.',
+                'partner_organization_name.required_if' => 'Selecteer een partner of vereniging.',
+                'company_name.required_if' => 'Naam van het bedrijf is verplicht.',
                 'guest_amount.required' => 'Aantal personen is verplicht.',
                 'guest_amount.integer' => 'Aantal personen moet een getal zijn.',
                 'guest_amount.min' => 'Aantal personen moet minimaal 1 zijn.',
                 'guest_amount.max' => 'Aantal personen mag maximaal 3 zijn.',
             ],
         );
+
+        if (
+            ($validated['type'] ?? null) === 'partner-bedrijf' &&
+            ! $this->eventHasPartnerOrganization($event, $validated)
+        ) {
+            throw ValidationException::withMessages([
+                'partner_organization_name' => 'Selecteer een geldige partner of vereniging van dit event.',
+            ]);
+        }
 
         if ($this->eventHasEnrollmentForEmail($event, $validated['email'])) {
             $message = 'Dit e-mailadres is al aangemeld voor dit event.';
@@ -206,6 +217,26 @@ class EnrollmentController extends Controller
         return $event->verenigingen
             ->firstWhere('name', $verenigingName)
             ?->students_must_pay ?? false;
+    }
+
+    private function eventHasPartnerOrganization(Event $event, array $validated): bool
+    {
+        $type = $validated['partner_organization_type'] ?? null;
+        $name = $validated['partner_organization_name'] ?? null;
+
+        if (! $type || ! $name) {
+            return false;
+        }
+
+        if ($type === 'partner') {
+            return $event->partners->contains('name', $name);
+        }
+
+        if ($type === 'vereniging') {
+            return $event->verenigingen->contains('name', $name);
+        }
+
+        return false;
     }
 
     private function eventHasEnrollmentForEmail(Event $event, string $email): bool

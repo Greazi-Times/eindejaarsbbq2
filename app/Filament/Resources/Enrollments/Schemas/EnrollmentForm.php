@@ -36,12 +36,15 @@ class EnrollmentForm
                 TextInput::make('education'),
                 TextInput::make('custom_education'),
                 Select::make('partner_organization_type')
-                    ->label('Soort organisatie')
+                    ->label('Soort BBQ-organisatie')
                     ->options([
                         'partner' => 'Partner',
                         'vereniging' => 'Vereniging',
                     ]),
-                TextInput::make('company_name'),
+                TextInput::make('partner_organization_name')
+                    ->label('Partner / vereniging BBQ'),
+                TextInput::make('company_name')
+                    ->label('Bedrijfsnaam'),
                 TextInput::make('guest_amount')
                     ->required()
                     ->numeric()

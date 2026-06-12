@@ -27,15 +27,18 @@ class EnrollmentInfolist
                 TextEntry::make('custom_education')
                     ->placeholder('-'),
                 TextEntry::make('partner_organization_type')
-                    ->label('Soort organisatie')
+                    ->label('Soort BBQ-organisatie')
                     ->formatStateUsing(fn (?string $state): string => match ($state) {
                         'partner' => 'Partner',
                         'vereniging' => 'Vereniging',
                         default => '-',
                     })
                     ->placeholder('-'),
+                TextEntry::make('partner_organization_name')
+                    ->label('Partner / vereniging BBQ')
+                    ->placeholder('-'),
                 TextEntry::make('company_name')
-                    ->label('Organisatie')
+                    ->label('Bedrijfsnaam')
                     ->placeholder('-'),
                 TextEntry::make('guest_amount')
                     ->numeric(),

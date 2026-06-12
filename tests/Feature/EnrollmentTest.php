@@ -68,7 +68,8 @@ it('stores a partner enrollment for a selected partner organization', function (
             'email' => 'partner@example.com',
             'type' => 'partner-bedrijf',
             'partner_organization_type' => 'partner',
-            'company_name' => $partner->name,
+            'partner_organization_name' => $partner->name,
+            'company_name' => 'External Company',
             'guest_amount' => 2,
             'dietary_preferences' => [],
         ]);
@@ -80,7 +81,8 @@ it('stores a partner enrollment for a selected partner organization', function (
     $enrollment = Enrollment::query()->firstOrFail();
 
     expect($enrollment->partner_organization_type)->toBe('partner')
-        ->and($enrollment->company_name)->toBe($partner->name)
+        ->and($enrollment->partner_organization_name)->toBe($partner->name)
+        ->and($enrollment->company_name)->toBe('External Company')
         ->and($enrollment->guest_amount)->toBe(2)
         ->and($enrollment->requires_payment)->toBeFalse();
 });
@@ -106,7 +108,8 @@ it('stores a partner enrollment for a selected vereniging organization', functio
             'email' => 'vereniging@example.com',
             'type' => 'partner-bedrijf',
             'partner_organization_type' => 'vereniging',
-            'company_name' => $vereniging->name,
+            'partner_organization_name' => $vereniging->name,
+            'company_name' => 'Vereniging Sponsor BV',
             'guest_amount' => 2,
             'dietary_preferences' => [],
         ]);
@@ -118,7 +121,8 @@ it('stores a partner enrollment for a selected vereniging organization', functio
     $enrollment = Enrollment::query()->firstOrFail();
 
     expect($enrollment->partner_organization_type)->toBe('vereniging')
-        ->and($enrollment->company_name)->toBe($vereniging->name)
+        ->and($enrollment->partner_organization_name)->toBe($vereniging->name)
+        ->and($enrollment->company_name)->toBe('Vereniging Sponsor BV')
         ->and($enrollment->guest_amount)->toBe(2)
         ->and($enrollment->requires_payment)->toBeFalse();
 });
