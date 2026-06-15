@@ -2,7 +2,6 @@
 
 use App\Models\Enrollment;
 use App\Models\Event;
-use App\Models\User;
 use Illuminate\Support\Carbon;
 
 afterEach(function (): void {
@@ -15,7 +14,7 @@ test('guests are redirected to the login page', function () {
 });
 
 test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
+    $user = panelUser();
     $this->actingAs($user);
 
     $response = $this->get(route('filament.dashboard.pages.dashboard'));
@@ -25,7 +24,7 @@ test('authenticated users can visit the dashboard', function () {
 test('dashboard displays enrollment totals for the upcoming event', function () {
     Carbon::setTestNow('2026-06-15 12:00:00');
 
-    $user = User::factory()->create();
+    $user = dashboardUser();
 
     $pastEvent = Event::create([
         'name' => 'Vorige BBQ',
@@ -84,7 +83,7 @@ test('dashboard displays enrollment totals for the upcoming event', function () 
 test('dashboard falls back to the last event when no future event is planned', function () {
     Carbon::setTestNow('2026-06-15 12:00:00');
 
-    $user = User::factory()->create();
+    $user = dashboardUser();
 
     $olderEvent = Event::create([
         'name' => 'Oudste BBQ',

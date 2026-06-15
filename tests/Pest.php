@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /*
@@ -47,4 +50,34 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+function panelUser(array $permissions = []): User
+{
+    $guardName = config('auth.defaults.guard', 'web');
+
+    $role = Role::firstOrCreate([
+        'name' => config('filament-shield.panel_user.name', 'panel_user'),
+        'guard_name' => $guardName,
+    ]);
+
+    collect($permissions)
+        ->map(fn (string $permission): Permission => Permission::firstOrCreate([
+            'name' => $permission,
+            'guard_name' => $guardName,
+        ]))
+        ->pipe(fn ($permissionModels) => $role->syncPermissions($permissionModels));
+
+    $user = User::factory()->create();
+    $user->assignRole($role);
+
+    return $user;
+}
+
+function dashboardUser(): User
+{
+    return panelUser([
+        'View:EventEnrollmentOverview',
+        'View:OrganizationEnrollmentTotals',
+    ]);
 }

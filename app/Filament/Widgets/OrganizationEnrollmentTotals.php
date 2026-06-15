@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\ResolvesDashboardEvent;
 use App\Models\Enrollment;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -11,7 +12,7 @@ use Illuminate\Support\Collection;
 
 class OrganizationEnrollmentTotals extends TableWidget
 {
-    use ResolvesDashboardEvent;
+    use HasWidgetShield, ResolvesDashboardEvent;
 
     protected static bool $isLazy = false;
 

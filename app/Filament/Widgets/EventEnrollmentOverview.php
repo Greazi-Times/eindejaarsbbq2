@@ -4,13 +4,14 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\ResolvesDashboardEvent;
 use App\Models\Enrollment;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Number;
 
 class EventEnrollmentOverview extends StatsOverviewWidget
 {
-    use ResolvesDashboardEvent;
+    use HasWidgetShield, ResolvesDashboardEvent;
 
     protected static bool $isLazy = false;
 
