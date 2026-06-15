@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Enrollment;
 use App\Models\Event;
+use App\Models\Partner;
+use App\Models\Vereniging;
 use App\Services\MolliePaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,13 +89,17 @@ class EnrollmentController extends Controller
                 ]);
         }
 
-        $requiresPayment = $this->studentRequiresPayment($event, $validated);
+        $organizationPaymentAmount = $this->organizationOverLimitPaymentAmount($event, $validated);
+        $requiresPayment = $organizationPaymentAmount !== null
+            || $this->studentRequiresPayment($event, $validated);
 
         $enrollment = Enrollment::create([
             ...$validated,
             'event_id' => $event->id,
             'requires_payment' => $requiresPayment,
             'payment_status' => $requiresPayment ? 'payment_pending' : null,
+            'payment_amount' => $organizationPaymentAmount,
+            'payment_currency' => $requiresPayment ? $mollie->currency() : null,
         ]);
 
         if ($requiresPayment) {
@@ -217,6 +223,106 @@ class EnrollmentController extends Controller
         return $event->verenigingen
             ->firstWhere('name', $verenigingName)
             ?->students_must_pay ?? false;
+    }
+
+    private function organizationOverLimitPaymentAmount(Event $event, array $validated): ?string
+    {
+        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($validated);
+
+        if (! $organizationType || ! $organizationName) {
+            return null;
+        }
+
+        $organization = $this->eventOrganization($event, $organizationType, $organizationName);
+
+        if (! $organization) {
+            return null;
+        }
+
+        $freeGuestLimit = $organization->pivot?->free_guest_limit;
+
+        if ($freeGuestLimit === null) {
+            return null;
+        }
+
+        $guestAmount = (int) ($validated['guest_amount'] ?? 1);
+        $currentGuestAmount = $this->currentOrganizationGuestAmount($event, $organizationType, $organizationName);
+        $overLimitGuests = min(
+            $guestAmount,
+            max(0, ($currentGuestAmount + $guestAmount) - (int) $freeGuestLimit),
+        );
+
+        if ($overLimitGuests <= 0) {
+            return null;
+        }
+
+        $overLimitPaymentAmount = $organization->pivot?->over_limit_payment_amount;
+
+        if ($overLimitPaymentAmount === null || (float) $overLimitPaymentAmount <= 0) {
+            throw ValidationException::withMessages([
+                'payment' => 'Voor deze partner of vereniging is geen prijs per extra persoon ingesteld.',
+            ]);
+        }
+
+        return number_format($overLimitGuests * (float) $overLimitPaymentAmount, 2, '.', '');
+    }
+
+    private function paymentOrganizationForEnrollment(array $validated): array
+    {
+        if (($validated['type'] ?? null) === 'student') {
+            $verenigingName = $validated['student_association'] ?? null;
+
+            if (! $verenigingName || $verenigingName === 'anders') {
+                return [null, null];
+            }
+
+            return ['vereniging', $verenigingName];
+        }
+
+        return [null, null];
+    }
+
+    private function eventOrganization(Event $event, string $organizationType, string $organizationName): Partner|Vereniging|null
+    {
+        if ($organizationType === 'partner') {
+            return $event->partners->firstWhere('name', $organizationName);
+        }
+
+        if ($organizationType === 'vereniging') {
+            return $event->verenigingen->firstWhere('name', $organizationName);
+        }
+
+        return null;
+    }
+
+    private function currentOrganizationGuestAmount(Event $event, string $organizationType, string $organizationName): int
+    {
+        return (int) Enrollment::query()
+            ->where('event_id', $event->id)
+            ->where(function ($query) use ($organizationType, $organizationName): void {
+                if ($organizationType === 'partner') {
+                    $query
+                        ->where('type', 'partner-bedrijf')
+                        ->where('partner_organization_type', 'partner')
+                        ->where('partner_organization_name', $organizationName);
+
+                    return;
+                }
+
+                $query
+                    ->where(function ($query) use ($organizationName): void {
+                        $query
+                            ->where('type', 'student')
+                            ->where('student_association', $organizationName);
+                    })
+                    ->orWhere(function ($query) use ($organizationName): void {
+                        $query
+                            ->where('type', 'partner-bedrijf')
+                            ->where('partner_organization_type', 'vereniging')
+                            ->where('partner_organization_name', $organizationName);
+                    });
+            })
+            ->sum('guest_amount');
     }
 
     private function eventHasPartnerOrganization(Event $event, array $validated): bool

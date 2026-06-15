@@ -22,6 +22,10 @@ class PartnerResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShare;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Organizations & Partners';
+
+    protected static ?int $navigationSort = 2;
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema

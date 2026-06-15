@@ -893,7 +893,7 @@ const addToGoogleCalendar = () => {
         </div>
 
         <section
-            class="relative flex min-h-[88svh] items-center overflow-hidden pt-20 pb-16"
+            class="home-hero relative flex min-h-[88svh] items-center overflow-hidden pt-20 pb-16"
             :style="{
                 background:
                     'linear-gradient(90deg, rgba(20, 13, 10, 0.9) 0%, rgba(20, 13, 10, 0.64) 45%, rgba(20, 13, 10, 0.42) 100%), linear-gradient(180deg, rgba(20, 13, 10, 0.1) 0%, rgba(20, 13, 10, 0.82) 100%), url(/images/hero-2.jpg) no-repeat center / cover',
@@ -903,78 +903,70 @@ const addToGoogleCalendar = () => {
                 class="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent"
             />
 
-            <div class="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6">
-                <div class="max-w-4xl">
+            <div class="home-hero__inner relative z-10 mx-auto w-full">
+                <div class="home-hero__content">
                     <p
-                        class="mb-5 inline-flex rounded-full border border-secondary/40 bg-secondary/15 px-4 py-2 text-sm font-bold tracking-wide text-secondary shadow-lg shadow-black/20 backdrop-blur"
+                        class="home-hero__badge inline-flex rounded-full border border-secondary/40 bg-secondary/15 font-bold tracking-wide text-secondary shadow-lg shadow-black/20 backdrop-blur"
                     >
                         Avans ATIx sluit het jaar buiten af
                     </p>
 
                     <h1
-                        class="font-chewy text-6xl leading-none text-white drop-shadow-[5px_5px_0_rgba(0,0,0,0.35)] sm:text-7xl md:text-8xl lg:text-9xl"
+                        class="home-hero__title font-chewy leading-none text-white drop-shadow-[5px_5px_0_rgba(0,0,0,0.35)]"
                     >
                         {{ eventTitle }}
                     </h1>
 
-                    <p
-                        class="mt-6 max-w-2xl text-lg leading-8 font-medium text-white/80 md:text-2xl md:leading-9"
-                    >
+                    <p class="home-hero__lead font-medium text-white/80">
                         Een avond vol vuur, verenigingen en goede gesprekken.
                         Meld je aan en schuif aan bij de Eindejaars BBQ.
                     </p>
 
-                    <div
-                        class="mt-8 grid max-w-3xl gap-3 sm:grid-cols-2 lg:grid-cols-4"
-                    >
+                    <div class="home-hero__facts grid">
                         <div
-                            class="flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white shadow-lg shadow-black/20 backdrop-blur"
+                            class="home-hero__fact flex items-center rounded-xl border border-white/15 bg-white/10 text-white shadow-lg shadow-black/20 backdrop-blur"
                         >
                             <PhCalendarBlank
-                                :size="22"
-                                class="shrink-0 text-secondary"
+                                class="home-hero__fact-icon shrink-0 text-secondary"
                                 weight="bold"
                             />
-                            <span class="text-sm font-semibold">
+                            <span class="font-semibold">
                                 {{ eventDateOnly }}
                             </span>
                         </div>
 
                         <div
-                            class="flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white shadow-lg shadow-black/20 backdrop-blur"
+                            class="home-hero__fact flex items-center rounded-xl border border-white/15 bg-white/10 text-white shadow-lg shadow-black/20 backdrop-blur"
                         >
                             <PhClock
-                                :size="22"
-                                class="shrink-0 text-secondary"
+                                class="home-hero__fact-icon shrink-0 text-secondary"
                                 weight="bold"
                             />
-                            <span class="text-sm font-semibold">
+                            <span class="font-semibold">
                                 {{ eventTimeOnly }}
                             </span>
                         </div>
 
                         <div
-                            class="flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white shadow-lg shadow-black/20 backdrop-blur"
+                            class="home-hero__fact flex items-center rounded-xl border border-white/15 bg-white/10 text-white shadow-lg shadow-black/20 backdrop-blur"
                         >
                             <PhMapPin
-                                :size="22"
-                                class="shrink-0 text-secondary"
+                                class="home-hero__fact-icon shrink-0 text-secondary"
                                 weight="bold"
                             />
-                            <span class="text-sm font-semibold">
+                            <span class="font-semibold">
                                 {{ eventLocation }}
                             </span>
                         </div>
 
                         <div
-                            class="flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white shadow-lg shadow-black/20 backdrop-blur"
+                            class="home-hero__fact flex items-center rounded-xl border border-white/15 bg-white/10 text-white shadow-lg shadow-black/20 backdrop-blur"
                         >
                             <PhUsersThree
-                                :size="22"
-                                class="shrink-0 text-secondary"
+                                class="home-hero__fact-icon shrink-0 text-secondary"
                                 weight="bold"
                             />
-                            <span class="text-sm font-semibold">
+                            <span class="font-semibold">
                                 {{ eventVerenigingen.length || 0 }}
                                 verenigingen
                             </span>
@@ -982,11 +974,12 @@ const addToGoogleCalendar = () => {
                     </div>
 
                     <div
-                        class="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center"
+                        class="home-hero__actions flex flex-col items-stretch sm:flex-row sm:items-center"
                     >
                         <Button
                             variant="primary"
                             size="lg"
+                            class="home-hero__action"
                             @click="scrollToRegisterForm"
                         >
                             Aanmelden
@@ -995,6 +988,7 @@ const addToGoogleCalendar = () => {
                         <Button
                             variant="outline"
                             size="lg"
+                            class="home-hero__action"
                             @click="openCalendarModal"
                         >
                             Toevoegen aan agenda
@@ -1468,6 +1462,111 @@ const addToGoogleCalendar = () => {
 </template>
 
 <style scoped>
+.home-hero {
+    padding-top: clamp(4rem, 9svh, 5rem);
+}
+
+.home-hero__inner {
+    width: min(88%, 80rem);
+}
+
+.home-hero__content {
+    max-width: min(62rem, 74vw);
+}
+
+.home-hero__badge {
+    margin-bottom: clamp(0.875rem, 2svh, 1.25rem);
+    padding: clamp(0.45rem, 0.9svh, 0.5rem) clamp(0.9rem, 1.8vw, 1rem);
+    font-size: clamp(0.75rem, 1.25svh, 0.875rem);
+}
+
+.home-hero__title {
+    max-width: 11ch;
+    font-size: clamp(4.2rem, min(10vw, 15svh), 8rem);
+}
+
+.home-hero__lead {
+    max-width: min(42rem, 58vw);
+    margin-top: clamp(1rem, 2.6svh, 1.5rem);
+    font-size: clamp(1.05rem, min(1.75vw, 2.75svh), 1.5rem);
+    line-height: 1.35;
+}
+
+.home-hero__facts {
+    max-width: min(54rem, 68vw);
+    margin-top: clamp(1.25rem, 3.2svh, 2rem);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(0.55rem, 1.2vw, 0.75rem);
+}
+
+.home-hero__fact {
+    min-height: clamp(3.05rem, 7.5svh, 4.25rem);
+    gap: clamp(0.6rem, 1.2vw, 0.75rem);
+    padding: clamp(0.65rem, 1.45svh, 0.85rem) clamp(0.8rem, 1.65vw, 1rem);
+    font-size: clamp(0.8125rem, 1.35svh, 0.875rem);
+}
+
+.home-hero__fact-icon {
+    width: clamp(1.1rem, 2.35svh, 1.375rem);
+    height: clamp(1.1rem, 2.35svh, 1.375rem);
+}
+
+.home-hero__actions {
+    margin-top: clamp(1.5rem, 3.6svh, 2.5rem);
+    gap: clamp(0.75rem, 1.5vw, 1rem);
+}
+
+.home-hero__action {
+    padding: clamp(0.75rem, 1.55svh, 0.9rem) clamp(1.15rem, 2.4vw, 1.5rem);
+    font-size: clamp(0.95rem, 1.55svh, 1.125rem);
+}
+
+@media (max-height: 760px) and (min-width: 1024px) {
+    .home-hero {
+        padding-top: 3.5rem;
+        padding-bottom: 2.5rem;
+    }
+
+    .home-hero__title {
+        font-size: clamp(3.75rem, min(8.2vw, 13.5svh), 6.25rem);
+    }
+
+    .home-hero__lead {
+        max-width: min(38rem, 56vw);
+        font-size: clamp(1rem, 2.5svh, 1.25rem);
+    }
+
+    .home-hero__facts {
+        max-width: min(48rem, 66vw);
+    }
+}
+
+@media (max-width: 900px) {
+    .home-hero__content,
+    .home-hero__lead,
+    .home-hero__facts {
+        max-width: none;
+    }
+
+    .home-hero__facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .home-hero__inner {
+        width: calc(100% - 2rem);
+    }
+
+    .home-hero__title {
+        font-size: clamp(3.25rem, 15vw, 4.75rem);
+    }
+
+    .home-hero__facts {
+        grid-template-columns: 1fr;
+    }
+}
+
 .event-content-band {
     background:
         linear-gradient(

@@ -6,6 +6,8 @@ use App\Filament\Resources\Events\Pages\CreateEvent;
 use App\Filament\Resources\Events\Pages\EditEvent;
 use App\Filament\Resources\Events\Pages\ListEvents;
 use App\Filament\Resources\Events\Pages\ViewEvent;
+use App\Filament\Resources\Events\RelationManagers\PartnersRelationManager;
+use App\Filament\Resources\Events\RelationManagers\VerenigingenRelationManager;
 use App\Filament\Resources\Events\Schemas\EventForm;
 use App\Filament\Resources\Events\Schemas\EventInfolist;
 use App\Filament\Resources\Events\Tables\EventsTable;
@@ -21,6 +23,10 @@ class EventResource extends Resource
     protected static ?string $model = Event::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Event Management';
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -42,7 +48,8 @@ class EventResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            PartnersRelationManager::class,
+            VerenigingenRelationManager::class,
         ];
     }
 

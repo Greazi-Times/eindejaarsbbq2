@@ -21,6 +21,10 @@ class Partner extends Model
 
     public function events(): BelongsToMany
     {
-        return $this->belongsToMany(Event::class);
+        return $this->belongsToMany(Event::class)
+            ->withPivot([
+                'free_guest_limit',
+                'over_limit_payment_amount',
+            ]);
     }
 }

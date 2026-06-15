@@ -22,6 +22,10 @@ class EnrollmentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPencil;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Event Management';
+
+    protected static ?int $navigationSort = 2;
+
     protected static ?string $recordTitleAttribute = 'email';
 
     public static function form(Schema $schema): Schema

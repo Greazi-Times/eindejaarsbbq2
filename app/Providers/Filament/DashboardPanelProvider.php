@@ -38,6 +38,11 @@ class DashboardPanelProvider extends PanelProvider
                 'danger' => Color::Rose,
                 'info' => Color::Sky,
             ])
+            ->navigationGroups([
+                'User Management',
+                'Event Management',
+                'Organizations & Partners',
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -62,7 +67,9 @@ class DashboardPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->plugins([
-                FilamentShieldPlugin::make(),
+                FilamentShieldPlugin::make()
+                    ->navigationGroup('User Management')
+                    ->navigationSort(1),
                 PhosphorIcons::make(),
                 BreezyCore::make()
                     ->myProfile(

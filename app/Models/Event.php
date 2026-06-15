@@ -25,7 +25,11 @@ class Event extends Model
 
     public function partners(): BelongsToMany
     {
-        return $this->belongsToMany(Partner::class);
+        return $this->belongsToMany(Partner::class)
+            ->withPivot([
+                'free_guest_limit',
+                'over_limit_payment_amount',
+            ]);
     }
 
     public function verenigingen(): BelongsToMany
@@ -35,11 +39,26 @@ class Event extends Model
             'event_vereniging',
             'event_id',
             'vereniging_id',
-        )->withTimestamps();
+        )
+            ->withPivot([
+                'free_guest_limit',
+                'over_limit_payment_amount',
+            ])
+            ->withTimestamps();
     }
 
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    public function eventPartners(): HasMany
+    {
+        return $this->hasMany(EventPartner::class);
+    }
+
+    public function eventVerenigingen(): HasMany
+    {
+        return $this->hasMany(EventVereniging::class);
     }
 }

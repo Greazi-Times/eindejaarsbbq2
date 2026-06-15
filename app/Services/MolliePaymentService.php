@@ -67,7 +67,7 @@ class MolliePaymentService
 
     public function eventAmount(Enrollment $enrollment): string
     {
-        $amount = $enrollment->event?->student_payment_amount;
+        $amount = $enrollment->payment_amount ?? $enrollment->event?->student_payment_amount;
 
         if ($amount === null || (float) $amount <= 0) {
             throw new RuntimeException('Student payment amount is not configured for this event.');

@@ -28,6 +28,11 @@ class Vereniging extends Model
             'event_vereniging',
             'vereniging_id',
             'event_id',
-        )->withTimestamps();
+        )
+            ->withPivot([
+                'free_guest_limit',
+                'over_limit_payment_amount',
+            ])
+            ->withTimestamps();
     }
 }

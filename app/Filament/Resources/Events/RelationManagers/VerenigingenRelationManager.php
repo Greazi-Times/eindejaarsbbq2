@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Events\RelationManagers;
 
-use App\Filament\Resources\Partners\PartnerResource;
+use App\Filament\Resources\Verenigings\VerenigingResource;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -14,11 +14,11 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class PartnersRelationManager extends RelationManager
+class VerenigingenRelationManager extends RelationManager
 {
-    protected static string $relationship = 'partners';
+    protected static string $relationship = 'verenigingen';
 
-    protected static ?string $relatedResource = PartnerResource::class;
+    protected static ?string $relatedResource = VerenigingResource::class;
 
     public function table(Table $table): Table
     {
@@ -47,7 +47,7 @@ class PartnersRelationManager extends RelationManager
             ])
             ->recordActions([
                 EditAction::make()
-                    ->modalHeading('Partnerlimiet bewerken')
+                    ->modalHeading('Verenigingslimiet bewerken')
                     ->schema(self::capacityFields()),
                 DetachAction::make(),
             ])
