@@ -25,10 +25,10 @@ html.fi.dark {
 
 .fi-body {
     background:
-        linear-gradient(180deg, rgba(20, 13, 10, 0.35) 0%, rgba(20, 13, 10, 0.94) 100%),
-        radial-gradient(circle at top left, rgba(220, 153, 86, 0.24), transparent 34%),
-        radial-gradient(circle at top right, rgba(249, 197, 84, 0.18), transparent 28%),
-        url('/images/hero-2.jpg') no-repeat center top / cover,
+        linear-gradient(180deg, rgba(20, 13, 10, 0.82) 0%, rgba(20, 13, 10, 0.96) 100%),
+        radial-gradient(circle at top left, rgba(220, 153, 86, 0.16), transparent 30%),
+        radial-gradient(circle at top right, rgba(249, 197, 84, 0.1), transparent 24%),
+        radial-gradient(circle at 50% 0%, rgba(234, 96, 42, 0.08), transparent 32%),
         var(--dashboard-bg);
     color: var(--dashboard-text);
 }
@@ -42,24 +42,24 @@ html.fi.dark {
     z-index: 0;
     background-repeat: no-repeat;
     background-size: contain;
-    opacity: 0.3;
+    opacity: 0.14;
 }
 
 .fi-body::before {
     top: 3.5rem;
     right: 0;
-    width: 28rem;
-    height: 28rem;
+    width: 24rem;
+    height: 24rem;
     background-image: url('/images/shape-2.svg');
 }
 
 .fi-body::after {
     bottom: 0;
     left: 0;
-    width: 32rem;
-    height: 32rem;
+    width: 28rem;
+    height: 28rem;
     background-image: url('/images/shape-1.svg');
-    opacity: 0.24;
+    opacity: 0.12;
 }
 
 .fi-layout,
@@ -326,7 +326,7 @@ html.fi.dark {
 @media (max-width: 1023px) {
     .fi-body::before,
     .fi-body::after {
-        opacity: 0.18;
+        opacity: 0.1;
     }
 
     .fi-main {
