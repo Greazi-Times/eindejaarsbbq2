@@ -17,6 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -126,9 +127,18 @@ class EnrollmentsTable
                             ->selectablePlaceholder(false)
                             ->searchable()
                             ->preload(),
+                        SelectFilter::make('organization')
+                            ->label('Association / organization')
+                            ->options(fn (): array => static::organizationFilterOptions())
+                            ->query(fn (Builder $query, array $data): Builder => static::applyOrganizationFilter(
+                                $query,
+                                $data['value'] ?? null,
+                            ))
+                            ->searchable()
+                            ->preload(),
                     ], FiltersLayout::AboveContent)
                     ->deferFilters(false)
-                    ->filtersFormColumns(1)
+                    ->filtersFormColumns(2)
                     ->persistFiltersInSession(),
             )
             ->recordActions([
@@ -274,6 +284,51 @@ class EnrollmentsTable
         }
 
         return '-';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function organizationFilterOptions(): array
+    {
+        return collect([
+            ...Enrollment::query()
+                ->whereNotNull('partner_organization_name')
+                ->pluck('partner_organization_name')
+                ->all(),
+            ...Enrollment::query()
+                ->whereNotNull('custom_student_association')
+                ->pluck('custom_student_association')
+                ->all(),
+            ...Enrollment::query()
+                ->whereNotNull('student_association')
+                ->pluck('student_association')
+                ->all(),
+            ...Enrollment::query()
+                ->whereNotNull('company_name')
+                ->pluck('company_name')
+                ->all(),
+        ])
+            ->filter(fn (?string $value): bool => filled($value))
+            ->unique()
+            ->sort()
+            ->mapWithKeys(fn (string $value): array => [$value => $value])
+            ->all();
+    }
+
+    private static function applyOrganizationFilter(Builder $query, ?string $value): Builder
+    {
+        if (blank($value)) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($value): void {
+            $query
+                ->where('partner_organization_name', $value)
+                ->orWhere('custom_student_association', $value)
+                ->orWhere('student_association', $value)
+                ->orWhere('company_name', $value);
+        });
     }
 
     private static function paymentStatusIcon(Enrollment $record): string

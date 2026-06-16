@@ -166,7 +166,10 @@ test('enrollments table displays the selected association or organization', func
     Livewire::test(ListEnrollments::class)
         ->assertTableColumnFormattedStateSet('organization', 'Vereniging Alpha', $studentEnrollment)
         ->assertTableColumnFormattedStateSet('organization', 'Partner Beta', $partnerEnrollment)
-        ->assertTableColumnFormattedStateSet('organization', 'Vereniging Gamma', $verenigingEnrollment);
+        ->assertTableColumnFormattedStateSet('organization', 'Vereniging Gamma', $verenigingEnrollment)
+        ->filterTable('organization', 'Partner Beta')
+        ->assertCanSeeTableRecords([$partnerEnrollment])
+        ->assertCanNotSeeTableRecords([$studentEnrollment, $verenigingEnrollment]);
 });
 
 test('payment status column uses the requested status icons', function () {
