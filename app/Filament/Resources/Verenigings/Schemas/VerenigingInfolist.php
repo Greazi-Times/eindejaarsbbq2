@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Verenigings\Schemas;
 
+use App\Support\EducationOptions;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
@@ -13,6 +14,10 @@ class VerenigingInfolist
         return $schema
             ->components([
                 TextEntry::make('name'),
+                TextEntry::make('education')
+                    ->label('Opleiding')
+                    ->formatStateUsing(fn (?string $state): ?string => EducationOptions::label($state))
+                    ->placeholder('-'),
                 ImageEntry::make('logo')
                     ->label('Logo')
                     ->placeholder('-'),

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\EnrollmentController;
 use App\Models\Event;
+use App\Support\EducationOptions;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -27,6 +28,7 @@ Route::get('/', function () {
         ->with([
             'partners' => fn ($query) => $query->orderBy('name'),
             'verenigingen' => fn ($query) => $query->orderBy('name'),
+            'enrollments:id,event_id,type,student_association,partner_organization_type,partner_organization_name,guest_amount',
         ])
         ->whereNotNull('starts_at')
         ->where('starts_at', '>=', now())
@@ -41,6 +43,7 @@ Route::get('/', function () {
             'ends_at' => $activeEvent->ends_at?->format('Y-m-d H:i:s'),
             'location' => $activeEvent->location,
             'description' => $activeEvent->description,
+            'default_payment_amount' => $activeEvent->default_payment_amount,
             'partners' => $activeEvent->partners->map(fn ($partner) => [
                 'id' => $partner->id,
                 'name' => $partner->name,
@@ -51,10 +54,32 @@ Route::get('/', function () {
             'verenigingen' => $activeEvent->verenigingen->map(fn ($vereniging) => [
                 'id' => $vereniging->id,
                 'name' => $vereniging->name,
+                'education' => $vereniging->education,
                 'logo' => $logoUrl($vereniging->logo),
                 'website' => $vereniging->website,
+                'current_guest_amount' => (int) $activeEvent->enrollments
+                    ->filter(fn ($enrollment): bool => (
+                        $enrollment->type === 'student'
+                        && $enrollment->student_association === $vereniging->name
+                    ) || (
+                        in_array($enrollment->type, ['student', 'docent', 'partner-bedrijf'], true)
+                        && $enrollment->partner_organization_type === 'vereniging'
+                        && $enrollment->partner_organization_name === $vereniging->name
+                    ))
+                    ->sum('guest_amount'),
+                'free_guest_limit' => $vereniging->pivot?->free_guest_limit,
+                'over_limit_payment_amount' => $vereniging->pivot?->over_limit_payment_amount,
+                'student_payment_amount' => $vereniging->pivot?->student_payment_amount,
+                'docent_payment_amount' => $vereniging->pivot?->docent_payment_amount,
+                'members_must_pay' => (bool) ($vereniging->pivot?->members_must_pay ?? false),
             ])->values(),
         ] : null,
+        'educationOptions' => collect(EducationOptions::formOptions())
+            ->map(fn (string $label, string $value) => [
+                'label' => $label,
+                'value' => $value,
+            ])
+            ->values(),
     ]);
 })->name('home');
 

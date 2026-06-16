@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Enrollments\Schemas;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class EnrollmentForm
@@ -43,6 +44,8 @@ class EnrollmentForm
                     ]),
                 TextInput::make('partner_organization_name')
                     ->label('Partner / vereniging BBQ'),
+                Toggle::make('is_organization_member')
+                    ->label('Lid van deze organisatie'),
                 TextInput::make('company_name')
                     ->label('Bedrijfsnaam'),
                 TextInput::make('guest_amount')

@@ -24,6 +24,7 @@ class Partner extends Model
                 'students_always_pay',
                 'docent_payment_amount',
                 'docents_always_pay',
+                'members_must_pay',
             ]);
     }
 }

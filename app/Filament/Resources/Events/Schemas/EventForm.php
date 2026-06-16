@@ -27,6 +27,13 @@ class EventForm
                 TextInput::make('location'),
                 Textarea::make('description')
                     ->columnSpanFull(),
+                TextInput::make('default_payment_amount')
+                    ->label('Standaardprijs')
+                    ->helperText('Deze prijs wordt gebruikt als iemand "Anders" kiest bij opleiding of als er geen vereniging aan de opleiding is gekoppeld.')
+                    ->placeholder('0.00')
+                    ->numeric()
+                    ->minValue(0)
+                    ->prefix('€'),
                 Repeater::make('eventPartners')
                     ->label('Partners')
                     ->relationship()
@@ -43,7 +50,7 @@ class EventForm
                     ->columns(1)
                     ->defaultItems(0)
                     ->addActionLabel('Partner toevoegen')
-                    ->helperText('Stel per partner capaciteit, extra-personenprijs en normale rolprijzen in.')
+                    ->helperText('Stel per partner capaciteit, extra-personenprijs, normale rolprijzen en ledenbetaling in.')
                     ->columnSpanFull(),
                 Repeater::make('eventVerenigingen')
                     ->label('Verenigingen')
@@ -61,7 +68,7 @@ class EventForm
                     ->columns(1)
                     ->defaultItems(0)
                     ->addActionLabel('Vereniging toevoegen')
-                    ->helperText('Stel per vereniging capaciteit, extra-personenprijs en normale rolprijzen in.')
+                    ->helperText('Stel per vereniging capaciteit, extra-personenprijs, normale rolprijzen en ledenbetaling in.')
                     ->columnSpanFull(),
             ]);
     }
@@ -94,7 +101,7 @@ class EventForm
                                 ->integer()
                                 ->minValue(0),
                             TextInput::make('over_limit_payment_amount')
-                                ->label('Extra persoon')
+                                ->label('Extra personen')
                                 ->placeholder('0.00')
                                 ->numeric()
                                 ->minValue(0)
@@ -102,9 +109,6 @@ class EventForm
                         ]),
                     Fieldset::make('Studenten')
                         ->schema([
-                            Toggle::make('students_always_pay')
-                                ->label('Altijd betalen')
-                                ->default(false),
                             TextInput::make('student_payment_amount')
                                 ->label('Prijs')
                                 ->placeholder('0.00')
@@ -114,9 +118,6 @@ class EventForm
                         ]),
                     Fieldset::make('Docenten')
                         ->schema([
-                            Toggle::make('docents_always_pay')
-                                ->label('Altijd betalen')
-                                ->default(false),
                             TextInput::make('docent_payment_amount')
                                 ->label('Prijs')
                                 ->placeholder('0.00')
@@ -124,6 +125,14 @@ class EventForm
                                 ->minValue(0)
                                 ->prefix('€'),
                         ]),
+                    Fieldset::make('Leden')
+                        ->schema([
+                            Toggle::make('members_must_pay')
+                                ->label('Leden betalen')
+                                ->helperText('Uit: leden zijn gratis. Aan: leden betalen de studenten- of docentenprijs, of anders het bedrag bij Extra personen.')
+                                ->default(false),
+                        ])
+                        ->columnSpanFull(),
                 ])
                 ->columnSpanFull(),
         ];

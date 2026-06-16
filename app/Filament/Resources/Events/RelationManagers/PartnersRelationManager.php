@@ -35,23 +35,28 @@ class PartnersRelationManager extends RelationManager
                     ->numeric()
                     ->placeholder('Geen limiet'),
                 TextColumn::make('pivot.over_limit_payment_amount')
-                    ->label('Prijs per extra persoon')
+                    ->label('Prijs extra personen')
                     ->money('EUR')
                     ->placeholder('-'),
-                IconColumn::make('pivot.students_always_pay')
+                IconColumn::make('student_payment_active')
                     ->label('Studenten betalen')
-                    ->boolean(),
+                    ->boolean()
+                    ->state(fn ($record): bool => (float) ($record->pivot?->student_payment_amount ?? 0) > 0),
                 TextColumn::make('pivot.student_payment_amount')
                     ->label('Studentenprijs')
                     ->money('EUR')
                     ->placeholder('Gratis'),
-                IconColumn::make('pivot.docents_always_pay')
+                IconColumn::make('docent_payment_active')
                     ->label('Docenten betalen')
-                    ->boolean(),
+                    ->boolean()
+                    ->state(fn ($record): bool => (float) ($record->pivot?->docent_payment_amount ?? 0) > 0),
                 TextColumn::make('pivot.docent_payment_amount')
                     ->label('Docentenprijs')
                     ->money('EUR')
                     ->placeholder('Gratis'),
+                IconColumn::make('pivot.members_must_pay')
+                    ->label('Leden betalen')
+                    ->boolean(),
             ])
             ->headerActions([
                 CreateAction::make(),
@@ -86,7 +91,7 @@ class PartnersRelationManager extends RelationManager
                         ->integer()
                         ->minValue(0),
                     TextInput::make('over_limit_payment_amount')
-                        ->label('Extra persoon')
+                        ->label('Extra personen')
                         ->placeholder('0.00')
                         ->numeric()
                         ->minValue(0)
@@ -94,9 +99,6 @@ class PartnersRelationManager extends RelationManager
                 ]),
             Fieldset::make('Studenten')
                 ->schema([
-                    Toggle::make('students_always_pay')
-                        ->label('Altijd betalen')
-                        ->default(false),
                     TextInput::make('student_payment_amount')
                         ->label('Prijs')
                         ->placeholder('0.00')
@@ -106,15 +108,19 @@ class PartnersRelationManager extends RelationManager
                 ]),
             Fieldset::make('Docenten')
                 ->schema([
-                    Toggle::make('docents_always_pay')
-                        ->label('Altijd betalen')
-                        ->default(false),
                     TextInput::make('docent_payment_amount')
                         ->label('Prijs')
                         ->placeholder('0.00')
                         ->numeric()
                         ->minValue(0)
                         ->prefix('€'),
+                ]),
+            Fieldset::make('Leden')
+                ->schema([
+                    Toggle::make('members_must_pay')
+                        ->label('Leden betalen')
+                        ->helperText('Uit: leden zijn gratis. Aan: leden betalen de studenten- of docentenprijs, of anders het bedrag bij Extra personen.')
+                        ->default(false),
                 ]),
         ];
     }

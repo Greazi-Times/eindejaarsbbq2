@@ -80,6 +80,10 @@ class EnrollmentsTable
                     ->label('Partner / vereniging BBQ')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                IconColumn::make('is_organization_member')
+                    ->label('Lid')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('company_name')
                     ->label('Bedrijfsnaam')
                     ->searchable()

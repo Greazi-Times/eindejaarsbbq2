@@ -25,6 +25,11 @@ class EventsTable
                     ->sortable(),
                 TextColumn::make('location')
                     ->searchable(),
+                TextColumn::make('default_payment_amount')
+                    ->label('Standaardprijs')
+                    ->money('EUR')
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('partners.name')
                     ->label('Partners')
                     ->badge()

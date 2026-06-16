@@ -19,6 +19,7 @@ class Enrollment extends Model
         'company_name',
         'partner_organization_type',
         'partner_organization_name',
+        'is_organization_member',
         'guest_amount',
         'dietary_preferences',
         'notes',
@@ -34,6 +35,7 @@ class Enrollment extends Model
 
     protected $casts = [
         'dietary_preferences' => 'array',
+        'is_organization_member' => 'boolean',
         'requires_payment' => 'boolean',
         'payment_amount' => 'decimal:2',
         'paid_at' => 'datetime',

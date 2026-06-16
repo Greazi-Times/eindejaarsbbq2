@@ -19,6 +19,7 @@ it('stores a student enrollment without payment for a free association', functio
 
     $vereniging = Vereniging::query()->create([
         'name' => 'Free Association',
+        'education' => 'mechatronica',
     ]);
 
     $event->verenigingen()->attach($vereniging);
@@ -30,6 +31,8 @@ it('stores a student enrollment without payment for a free association', functio
             'email' => 'student@example.com',
             'type' => 'student',
             'student_association' => $vereniging->name,
+            'education' => 'mechatronica',
+            'is_organization_member' => false,
             'guest_amount' => 1,
             'dietary_preferences' => [],
         ]);
@@ -67,8 +70,10 @@ it('stores a partner enrollment for a selected partner organization', function (
             'full_name' => 'Partner Tester',
             'email' => 'partner@example.com',
             'type' => 'partner-bedrijf',
+            'education' => 'mechatronica',
             'partner_organization_type' => 'partner',
             'partner_organization_name' => $partner->name,
+            'is_organization_member' => false,
             'company_name' => 'External Company',
             'guest_amount' => 2,
             'dietary_preferences' => [],
@@ -97,6 +102,7 @@ it('stores a partner enrollment for a selected vereniging organization', functio
 
     $vereniging = Vereniging::query()->create([
         'name' => 'Study Association',
+        'education' => 'mechatronica',
     ]);
 
     $event->verenigingen()->attach($vereniging);
@@ -107,8 +113,10 @@ it('stores a partner enrollment for a selected vereniging organization', functio
             'full_name' => 'Vereniging Tester',
             'email' => 'vereniging@example.com',
             'type' => 'partner-bedrijf',
+            'education' => 'mechatronica',
             'partner_organization_type' => 'vereniging',
             'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => false,
             'company_name' => 'Vereniging Sponsor BV',
             'guest_amount' => 2,
             'dietary_preferences' => [],
@@ -140,7 +148,6 @@ it('charges students with the selected partner price', function () {
     ]);
 
     $event->partners()->attach($partner, [
-        'students_always_pay' => true,
         'student_payment_amount' => 6.50,
     ]);
 
@@ -153,8 +160,10 @@ it('charges students with the selected partner price', function () {
             'email' => 'partner-student@example.com',
             'type' => 'student',
             'student_association' => $partner->name,
+            'education' => 'mechatronica',
             'partner_organization_type' => 'partner',
             'partner_organization_name' => $partner->name,
+            'is_organization_member' => false,
             'guest_amount' => 1,
             'dietary_preferences' => [],
         ]);
@@ -173,7 +182,7 @@ it('charges students with the selected partner price', function () {
         ->and($enrollment->partner_organization_name)->toBe($partner->name);
 });
 
-it('charges docents with the selected vereniging price', function () {
+it('charges docents from the education price without linking them to a vereniging', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
         'starts_at' => now()->addWeek(),
@@ -183,10 +192,10 @@ it('charges docents with the selected vereniging price', function () {
 
     $vereniging = Vereniging::query()->create([
         'name' => 'Docent Association',
+        'education' => 'mechatronica',
     ]);
 
     $event->verenigingen()->attach($vereniging, [
-        'docents_always_pay' => true,
         'docent_payment_amount' => 4.25,
     ]);
 
@@ -195,18 +204,19 @@ it('charges docents with the selected vereniging price', function () {
     $response = $this
         ->from('/aanmelden')
         ->post(route('enrollments.store'), [
-            'full_name' => 'Paying Docent',
-            'email' => 'paying-docent@example.com',
+            'full_name' => 'Education Docent',
+            'email' => 'education-docent@example.com',
             'type' => 'docent',
             'education' => 'mechatronica',
             'partner_organization_type' => 'vereniging',
             'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => true,
             'guest_amount' => 1,
             'dietary_preferences' => [],
         ]);
 
     $enrollment = Enrollment::query()
-        ->where('email', 'paying-docent@example.com')
+        ->where('email', 'education-docent@example.com')
         ->firstOrFail();
 
     $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
@@ -215,11 +225,13 @@ it('charges docents with the selected vereniging price', function () {
         ->and((float) $enrollment->payment_amount)->toBe(4.25)
         ->and($enrollment->payment_currency)->toBe('EUR')
         ->and($enrollment->payment_status)->toBe('open')
-        ->and($enrollment->partner_organization_type)->toBe('vereniging')
-        ->and($enrollment->partner_organization_name)->toBe($vereniging->name);
+        ->and($enrollment->student_association)->toBeNull()
+        ->and($enrollment->partner_organization_type)->toBeNull()
+        ->and($enrollment->partner_organization_name)->toBeNull()
+        ->and($enrollment->is_organization_member)->toBeNull();
 });
 
-it('keeps normal role prices inactive until the always pay field is enabled', function () {
+it('charges normal role prices when an amount is configured', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
         'starts_at' => now()->addWeek(),
@@ -229,6 +241,7 @@ it('keeps normal role prices inactive until the always pay field is enabled', fu
 
     $vereniging = Vereniging::query()->create([
         'name' => 'Optional Price Association',
+        'education' => 'mechatronica',
     ]);
 
     $event->verenigingen()->attach($vereniging, [
@@ -236,15 +249,64 @@ it('keeps normal role prices inactive until the always pay field is enabled', fu
         'docent_payment_amount' => 8.25,
     ]);
 
+    $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
+
     $response = $this
         ->from('/aanmelden')
         ->post(route('enrollments.store'), [
-            'full_name' => 'Free Student',
-            'email' => 'free-student@example.com',
+            'full_name' => 'Paying Student',
+            'email' => 'paying-student@example.com',
             'type' => 'student',
             'student_association' => $vereniging->name,
+            'education' => 'mechatronica',
             'partner_organization_type' => 'vereniging',
             'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => false,
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'paying-student@example.com')
+        ->firstOrFail();
+
+    $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
+
+    expect($enrollment->requires_payment)->toBeTrue()
+        ->and((float) $enrollment->payment_amount)->toBe(9.75)
+        ->and($enrollment->payment_currency)->toBe('EUR')
+        ->and($enrollment->payment_status)->toBe('open');
+});
+
+it('keeps organization members free when members do not have to pay', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Member Association',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging, [
+        'student_payment_amount' => 9.75,
+        'members_must_pay' => false,
+    ]);
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Free Member',
+            'email' => 'free-member@example.com',
+            'type' => 'student',
+            'student_association' => $vereniging->name,
+            'education' => 'mechatronica',
+            'partner_organization_type' => 'vereniging',
+            'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => true,
             'guest_amount' => 1,
             'dietary_preferences' => [],
         ]);
@@ -254,16 +316,107 @@ it('keeps normal role prices inactive until the always pay field is enabled', fu
         ->assertSessionHas('banner.type', 'success');
 
     $enrollment = Enrollment::query()
-        ->where('email', 'free-student@example.com')
+        ->where('email', 'free-member@example.com')
         ->firstOrFail();
 
-    expect($enrollment->requires_payment)->toBeFalse()
-        ->and($enrollment->payment_amount)->toBeNull()
-        ->and($enrollment->payment_currency)->toBeNull()
-        ->and($enrollment->payment_status)->toBeNull();
+    expect($enrollment->is_organization_member)->toBeTrue()
+        ->and($enrollment->requires_payment)->toBeFalse()
+        ->and($enrollment->payment_amount)->toBeNull();
 });
 
-it('rejects normal role payments when always pay is enabled without a price', function () {
+it('charges organization members when members have to pay', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Paying Member Association',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging, [
+        'student_payment_amount' => 5.25,
+        'members_must_pay' => true,
+    ]);
+
+    $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Paying Member',
+            'email' => 'paying-member@example.com',
+            'type' => 'student',
+            'student_association' => $vereniging->name,
+            'education' => 'mechatronica',
+            'partner_organization_type' => 'vereniging',
+            'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => true,
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'paying-member@example.com')
+        ->firstOrFail();
+
+    $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
+
+    expect($enrollment->is_organization_member)->toBeTrue()
+        ->and($enrollment->requires_payment)->toBeTrue()
+        ->and((float) $enrollment->payment_amount)->toBe(5.25)
+        ->and($enrollment->payment_status)->toBe('open');
+});
+
+it('charges organization members with the vereniging amount when members have to pay', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Fallback Member Association',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging, [
+        'free_guest_limit' => 1,
+        'over_limit_payment_amount' => 7.50,
+        'members_must_pay' => true,
+    ]);
+
+    $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Fallback Paying Member',
+            'email' => 'fallback-paying-member@example.com',
+            'type' => 'student',
+            'education' => 'mechatronica',
+            'is_organization_member' => true,
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'fallback-paying-member@example.com')
+        ->firstOrFail();
+
+    $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
+
+    expect($enrollment->requires_payment)->toBeTrue()
+        ->and((float) $enrollment->payment_amount)->toBe(7.50)
+        ->and($enrollment->student_association)->toBe($vereniging->name)
+        ->and($enrollment->payment_status)->toBe('open');
+});
+
+it('keeps normal role payments free when no amount is configured', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
         'starts_at' => now()->addWeek(),
@@ -273,35 +426,41 @@ it('rejects normal role payments when always pay is enabled without a price', fu
 
     $vereniging = Vereniging::query()->create([
         'name' => 'Missing Price Association',
+        'education' => 'mechatronica',
     ]);
 
-    $event->verenigingen()->attach($vereniging, [
-        'students_always_pay' => true,
-    ]);
+    $event->verenigingen()->attach($vereniging);
 
     $response = $this
         ->from('/aanmelden')
         ->post(route('enrollments.store'), [
-            'full_name' => 'Missing Price Student',
-            'email' => 'missing-price-student@example.com',
+            'full_name' => 'No Role Price Student',
+            'email' => 'no-role-price-student@example.com',
             'type' => 'student',
             'student_association' => $vereniging->name,
+            'education' => 'mechatronica',
             'partner_organization_type' => 'vereniging',
             'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => false,
             'guest_amount' => 1,
             'dietary_preferences' => [],
         ]);
 
     $response
-        ->assertRedirect('/aanmelden')
-        ->assertSessionHasErrors([
-            'payment' => 'Voor deze partner of vereniging is geen studentenprijs ingesteld.',
-        ]);
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('banner.type', 'success');
 
-    expect(Enrollment::query()->count())->toBe(0);
+    $enrollment = Enrollment::query()
+        ->where('email', 'no-role-price-student@example.com')
+        ->firstOrFail();
+
+    expect($enrollment->requires_payment)->toBeFalse()
+        ->and($enrollment->payment_amount)->toBeNull()
+        ->and($enrollment->payment_currency)->toBeNull()
+        ->and($enrollment->payment_status)->toBeNull();
 });
 
-it('charges students with the vereniging extra person price after the free limit', function () {
+it('charges partner enrollments with the vereniging extra persons total price after the free limit', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
         'starts_at' => now()->addWeek(),
@@ -311,6 +470,7 @@ it('charges students with the vereniging extra person price after the free limit
 
     $vereniging = Vereniging::query()->create([
         'name' => 'Limited Association',
+        'education' => 'mechatronica',
     ]);
 
     $event->verenigingen()->attach($vereniging, [
@@ -320,10 +480,11 @@ it('charges students with the vereniging extra person price after the free limit
 
     Enrollment::query()->create([
         'event_id' => $event->id,
-        'full_name' => 'Existing Student',
+        'full_name' => 'Existing Partner',
         'email' => 'existing@example.com',
-        'type' => 'student',
-        'student_association' => $vereniging->name,
+        'type' => 'partner-bedrijf',
+        'partner_organization_type' => 'vereniging',
+        'partner_organization_name' => $vereniging->name,
         'guest_amount' => 2,
         'requires_payment' => false,
     ]);
@@ -333,11 +494,14 @@ it('charges students with the vereniging extra person price after the free limit
     $response = $this
         ->from('/aanmelden')
         ->post(route('enrollments.store'), [
-            'full_name' => 'Over Limit Student',
+            'full_name' => 'Over Limit Partner',
             'email' => 'over-limit@example.com',
-            'type' => 'student',
-            'student_association' => $vereniging->name,
-            'guest_amount' => 1,
+            'type' => 'partner-bedrijf',
+            'education' => 'mechatronica',
+            'partner_organization_type' => 'vereniging',
+            'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => false,
+            'guest_amount' => 2,
             'dietary_preferences' => [],
         ]);
 
@@ -351,10 +515,251 @@ it('charges students with the vereniging extra person price after the free limit
         ->and((float) $enrollment->payment_amount)->toBe(7.50)
         ->and($enrollment->payment_currency)->toBe('EUR')
         ->and($enrollment->payment_status)->toBe('open')
+        ->and($enrollment->guest_amount)->toBe(2)
         ->and($enrollment->mollie_payment_id)->toBe("tr_{$enrollment->id}");
 });
 
-it('keeps partner enrollments free even when their partner cap is exceeded', function () {
+it('stores student enrollments as one person even if a higher amount is posted', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Single Student Association',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging);
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Single Student',
+            'email' => 'single-student@example.com',
+            'type' => 'student',
+            'education' => 'mechatronica',
+            'is_organization_member' => false,
+            'guest_amount' => 3,
+            'dietary_preferences' => [],
+        ]);
+
+    $response
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('banner.type', 'success');
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'single-student@example.com')
+        ->firstOrFail();
+
+    expect($enrollment->guest_amount)->toBe(1)
+        ->and($enrollment->requires_payment)->toBeFalse();
+});
+
+it('charges student enrollments with the vereniging total price after the free limit', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Motus',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging, [
+        'free_guest_limit' => 1,
+        'over_limit_payment_amount' => 32.00,
+    ]);
+
+    Enrollment::query()->create([
+        'event_id' => $event->id,
+        'full_name' => 'Existing Student',
+        'email' => 'existing-student@example.com',
+        'type' => 'student',
+        'education' => 'mechatronica',
+        'student_association' => $vereniging->name,
+        'partner_organization_type' => 'vereniging',
+        'partner_organization_name' => $vereniging->name,
+        'guest_amount' => 1,
+        'requires_payment' => false,
+    ]);
+
+    $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Over Limit Student',
+            'email' => 'over-limit-student@example.com',
+            'type' => 'student',
+            'education' => 'mechatronica',
+            'is_organization_member' => false,
+            'guest_amount' => 3,
+            'dietary_preferences' => [],
+        ]);
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'over-limit-student@example.com')
+        ->firstOrFail();
+
+    $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
+
+    expect($enrollment->requires_payment)->toBeTrue()
+        ->and((float) $enrollment->payment_amount)->toBe(32.00)
+        ->and($enrollment->payment_currency)->toBe('EUR')
+        ->and($enrollment->payment_status)->toBe('open')
+        ->and($enrollment->student_association)->toBe($vereniging->name)
+        ->and($enrollment->guest_amount)->toBe(1)
+        ->and($enrollment->mollie_payment_id)->toBe("tr_{$enrollment->id}");
+});
+
+it('keeps organization members free after the free limit when members do not have to pay', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Free Members Association',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging, [
+        'free_guest_limit' => 1,
+        'over_limit_payment_amount' => 32.00,
+        'members_must_pay' => false,
+    ]);
+
+    Enrollment::query()->create([
+        'event_id' => $event->id,
+        'full_name' => 'Existing Student',
+        'email' => 'existing-free-member-limit@example.com',
+        'type' => 'student',
+        'education' => 'mechatronica',
+        'student_association' => $vereniging->name,
+        'partner_organization_type' => 'vereniging',
+        'partner_organization_name' => $vereniging->name,
+        'guest_amount' => 1,
+        'requires_payment' => false,
+    ]);
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Free Over Limit Member',
+            'email' => 'free-over-limit-member@example.com',
+            'type' => 'student',
+            'education' => 'mechatronica',
+            'is_organization_member' => true,
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $response
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('banner.type', 'success');
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'free-over-limit-member@example.com')
+        ->firstOrFail();
+
+    expect($enrollment->is_organization_member)->toBeTrue()
+        ->and($enrollment->requires_payment)->toBeFalse()
+        ->and($enrollment->payment_amount)->toBeNull()
+        ->and($enrollment->payment_status)->toBeNull();
+});
+
+it('uses the role payment instead of adding the extra persons price', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Always Pay Association',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging, [
+        'free_guest_limit' => 0,
+        'over_limit_payment_amount' => 10.00,
+        'student_payment_amount' => 5.00,
+    ]);
+
+    $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Always Pay Student',
+            'email' => 'always-pay-student@example.com',
+            'type' => 'student',
+            'student_association' => $vereniging->name,
+            'education' => 'mechatronica',
+            'partner_organization_type' => 'vereniging',
+            'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => false,
+            'guest_amount' => 3,
+            'dietary_preferences' => [],
+        ]);
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'always-pay-student@example.com')
+        ->firstOrFail();
+
+    $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
+
+    expect($enrollment->requires_payment)->toBeTrue()
+        ->and((float) $enrollment->payment_amount)->toBe(5.00)
+        ->and($enrollment->payment_status)->toBe('open');
+});
+
+it('charges the event default price for another education', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+        'default_payment_amount' => 11.00,
+    ]);
+
+    $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Other Education Student',
+            'email' => 'other-education@example.com',
+            'type' => 'student',
+            'education' => 'anders',
+            'custom_education' => 'Civiele Techniek',
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'other-education@example.com')
+        ->firstOrFail();
+
+    $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
+
+    expect($enrollment->requires_payment)->toBeTrue()
+        ->and((float) $enrollment->payment_amount)->toBe(11.00)
+        ->and($enrollment->education)->toBe('anders')
+        ->and($enrollment->custom_education)->toBe('Civiele Techniek')
+        ->and($enrollment->payment_status)->toBe('open');
+});
+
+it('charges partner enrollments when their partner cap is exceeded', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
         'starts_at' => now()->addWeek(),
@@ -378,10 +783,13 @@ it('keeps partner enrollments free even when their partner cap is exceeded', fun
         'type' => 'partner-bedrijf',
         'partner_organization_type' => 'partner',
         'partner_organization_name' => $partner->name,
+        'is_organization_member' => false,
         'company_name' => 'Existing BV',
         'guest_amount' => 3,
         'requires_payment' => false,
     ]);
+
+    $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
 
     $response = $this
         ->from('/aanmelden')
@@ -389,28 +797,28 @@ it('keeps partner enrollments free even when their partner cap is exceeded', fun
             'full_name' => 'Over Limit Partner',
             'email' => 'over-limit-partner@example.com',
             'type' => 'partner-bedrijf',
+            'education' => 'mechatronica',
             'partner_organization_type' => 'partner',
             'partner_organization_name' => $partner->name,
+            'is_organization_member' => false,
             'company_name' => 'Over Limit BV',
             'guest_amount' => 3,
             'dietary_preferences' => [],
         ]);
 
-    $response
-        ->assertRedirect(route('home'))
-        ->assertSessionHas('banner.type', 'success');
-
     $enrollment = Enrollment::query()
         ->where('email', 'over-limit-partner@example.com')
         ->firstOrFail();
 
-    expect($enrollment->requires_payment)->toBeFalse()
-        ->and($enrollment->payment_amount)->toBeNull()
-        ->and($enrollment->payment_currency)->toBeNull()
-        ->and($enrollment->payment_status)->toBeNull();
+    $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
+
+    expect($enrollment->requires_payment)->toBeTrue()
+        ->and((float) $enrollment->payment_amount)->toBe(12.50)
+        ->and($enrollment->payment_currency)->toBe('EUR')
+        ->and($enrollment->payment_status)->toBe('open');
 });
 
-it('keeps partner enrollments free even when linked to an over-limit vereniging', function () {
+it('rejects over-limit partner enrollments when linked to a vereniging without an extra persons price', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
         'starts_at' => now()->addWeek(),
@@ -420,6 +828,7 @@ it('keeps partner enrollments free even when linked to an over-limit vereniging'
 
     $vereniging = Vereniging::query()->create([
         'name' => 'Limited Association Partner',
+        'education' => 'mechatronica',
     ]);
 
     $event->verenigingen()->attach($vereniging, [
@@ -429,28 +838,25 @@ it('keeps partner enrollments free even when linked to an over-limit vereniging'
     $response = $this
         ->from('/aanmelden')
         ->post(route('enrollments.store'), [
-            'full_name' => 'Free Partner',
+            'full_name' => 'Over Limit Vereniging Partner',
             'email' => 'free-partner@example.com',
             'type' => 'partner-bedrijf',
+            'education' => 'mechatronica',
             'partner_organization_type' => 'vereniging',
             'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => false,
             'company_name' => 'Free Partner BV',
             'guest_amount' => 3,
             'dietary_preferences' => [],
         ]);
 
     $response
-        ->assertRedirect(route('home'))
-        ->assertSessionHas('banner.type', 'success');
+        ->assertRedirect('/aanmelden')
+        ->assertSessionHasErrors([
+            'payment' => 'Voor deze partner of vereniging is geen prijs voor extra personen ingesteld.',
+        ]);
 
-    $enrollment = Enrollment::query()
-        ->where('email', 'free-partner@example.com')
-        ->firstOrFail();
-
-    expect($enrollment->requires_payment)->toBeFalse()
-        ->and($enrollment->payment_amount)->toBeNull()
-        ->and($enrollment->payment_currency)->toBeNull()
-        ->and($enrollment->payment_status)->toBeNull();
+    expect(Enrollment::query()->count())->toBe(0);
 });
 
 it('rejects over-limit enrollments when the extra person price is missing', function () {
@@ -463,6 +869,7 @@ it('rejects over-limit enrollments when the extra person price is missing', func
 
     $vereniging = Vereniging::query()->create([
         'name' => 'No Price Association',
+        'education' => 'mechatronica',
     ]);
 
     $event->verenigingen()->attach($vereniging, [
@@ -472,18 +879,21 @@ it('rejects over-limit enrollments when the extra person price is missing', func
     $response = $this
         ->from('/aanmelden')
         ->post(route('enrollments.store'), [
-            'full_name' => 'No Price Student',
+            'full_name' => 'No Price Partner',
             'email' => 'no-price@example.com',
-            'type' => 'student',
-            'student_association' => $vereniging->name,
-            'guest_amount' => 1,
+            'type' => 'partner-bedrijf',
+            'education' => 'mechatronica',
+            'partner_organization_type' => 'vereniging',
+            'partner_organization_name' => $vereniging->name,
+            'is_organization_member' => false,
+            'guest_amount' => 2,
             'dietary_preferences' => [],
         ]);
 
     $response
         ->assertRedirect('/aanmelden')
         ->assertSessionHasErrors([
-            'payment' => 'Voor deze partner of vereniging is geen prijs per extra persoon ingesteld.',
+            'payment' => 'Voor deze partner of vereniging is geen prijs voor extra personen ingesteld.',
         ]);
 
     expect(Enrollment::query()->count())->toBe(0);
@@ -499,6 +909,7 @@ it('rejects duplicate email enrollments for the same event', function () {
 
     $vereniging = Vereniging::query()->create([
         'name' => 'Free Association',
+        'education' => 'mechatronica',
     ]);
 
     $event->verenigingen()->attach($vereniging);
@@ -520,6 +931,8 @@ it('rejects duplicate email enrollments for the same event', function () {
             'email' => 'STUDENT@example.com',
             'type' => 'student',
             'student_association' => $vereniging->name,
+            'education' => 'mechatronica',
+            'is_organization_member' => false,
             'guest_amount' => 1,
             'dietary_preferences' => [],
         ]);

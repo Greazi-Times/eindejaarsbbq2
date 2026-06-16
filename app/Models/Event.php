@@ -14,11 +14,13 @@ class Event extends Model
         'ends_at',
         'location',
         'description',
+        'default_payment_amount',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
+        'default_payment_amount' => 'decimal:2',
     ];
 
     public function partners(): BelongsToMany
@@ -31,6 +33,7 @@ class Event extends Model
                 'students_always_pay',
                 'docent_payment_amount',
                 'docents_always_pay',
+                'members_must_pay',
             ]);
     }
 
@@ -49,6 +52,7 @@ class Event extends Model
                 'students_always_pay',
                 'docent_payment_amount',
                 'docents_always_pay',
+                'members_must_pay',
             ])
             ->withTimestamps();
     }

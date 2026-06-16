@@ -24,6 +24,10 @@ class EventInfolist
                 TextEntry::make('description')
                     ->placeholder('-')
                     ->columnSpanFull(),
+                TextEntry::make('default_payment_amount')
+                    ->label('Standaardprijs')
+                    ->money('EUR')
+                    ->placeholder('-'),
                 Section::make('Partners')
                     ->schema([
                         TextEntry::make('partners.name')

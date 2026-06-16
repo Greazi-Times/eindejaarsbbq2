@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Verenigings\Tables;
 
+use App\Support\EducationOptions;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -22,6 +23,12 @@ class VerenigingsTable
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('education')
+                    ->label('Opleiding')
+                    ->formatStateUsing(fn (?string $state): ?string => EducationOptions::label($state))
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('website')
                     ->searchable()
                     ->toggleable(),

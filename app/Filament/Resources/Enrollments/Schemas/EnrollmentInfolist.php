@@ -41,6 +41,9 @@ class EnrollmentInfolist
                 TextEntry::make('partner_organization_name')
                     ->label('Partner / vereniging BBQ')
                     ->placeholder('-'),
+                IconEntry::make('is_organization_member')
+                    ->label('Lid van organisatie')
+                    ->boolean(),
                 TextEntry::make('company_name')
                     ->label('Bedrijfsnaam')
                     ->placeholder('-'),

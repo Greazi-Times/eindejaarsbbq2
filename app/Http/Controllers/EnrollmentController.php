@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\Partner;
 use App\Models\Vereniging;
 use App\Services\MolliePaymentService;
+use App\Support\EducationOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -40,12 +41,13 @@ class EnrollmentController extends Controller
                 'student_association' => ['nullable', 'string', 'max:255'],
                 'custom_student_association' => ['nullable', 'string', 'max:255'],
 
-                'education' => ['nullable', 'string', 'max:255'],
-                'custom_education' => ['nullable', 'string', 'max:255'],
+                'education' => ['required', 'string', 'max:255'],
+                'custom_education' => ['required_if:education,'.EducationOptions::OTHER, 'nullable', 'string', 'max:255'],
 
-                'partner_organization_type' => ['required_if:type,partner-bedrijf', 'required_if:type,docent', 'nullable', 'string', 'in:partner,vereniging'],
-                'partner_organization_name' => ['required_if:type,partner-bedrijf', 'required_if:type,docent', 'nullable', 'string', 'max:255'],
-                'company_name' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
+                'partner_organization_type' => ['nullable', 'string', 'in:partner,vereniging'],
+                'partner_organization_name' => ['nullable', 'string', 'max:255'],
+                'is_organization_member' => ['nullable', 'boolean'],
+                'company_name' => ['nullable', 'string', 'max:255'],
 
                 'guest_amount' => ['required', 'integer', 'min:1', 'max:3'],
 
@@ -57,16 +59,49 @@ class EnrollmentController extends Controller
                 'email.email' => 'Vul een geldig e-mailadres in.',
                 'type.required' => 'Selecteer een type.',
                 'type.in' => 'Selecteer een geldig type.',
-                'partner_organization_type.required_if' => 'Selecteer of je aanmelding bij een partner of vereniging hoort.',
+                'education.required' => 'Selecteer een opleiding.',
+                'custom_education.required_if' => 'Vul je opleiding in.',
                 'partner_organization_type.in' => 'Selecteer een geldig organisatietype.',
-                'partner_organization_name.required_if' => 'Selecteer een partner of vereniging.',
-                'company_name.required_if' => 'Naam van het bedrijf is verplicht.',
+                'is_organization_member.boolean' => 'Selecteer een geldige ledenstatus.',
                 'guest_amount.required' => 'Aantal personen is verplicht.',
                 'guest_amount.integer' => 'Aantal personen moet een getal zijn.',
                 'guest_amount.min' => 'Aantal personen moet minimaal 1 zijn.',
                 'guest_amount.max' => 'Aantal personen mag maximaal 3 zijn.',
             ],
         );
+
+        if (
+            ($validated['type'] ?? null) === 'student'
+            && $this->eventVerenigingForEducation($event, $validated)
+            && ! $request->has('is_organization_member')
+        ) {
+            throw ValidationException::withMessages([
+                'is_organization_member' => 'Selecteer of je lid bent van deze vereniging.',
+            ]);
+        }
+
+        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($event, $validated);
+
+        if (($validated['type'] ?? null) === 'student' && $organizationType === 'vereniging' && $organizationName) {
+            $validated['student_association'] = $organizationName;
+        }
+
+        if ($organizationType && $organizationName) {
+            $validated['partner_organization_type'] = $organizationType;
+            $validated['partner_organization_name'] = $organizationName;
+        }
+
+        if (($validated['type'] ?? null) === 'docent') {
+            $validated['student_association'] = null;
+            $validated['custom_student_association'] = null;
+            $validated['partner_organization_type'] = null;
+            $validated['partner_organization_name'] = null;
+            $validated['is_organization_member'] = null;
+        }
+
+        if (($validated['type'] ?? null) !== 'partner-bedrijf') {
+            $validated['guest_amount'] = 1;
+        }
 
         if (
             $this->shouldValidatePartnerOrganization($validated) &&
@@ -209,16 +244,19 @@ class EnrollmentController extends Controller
 
     private function paymentAmountForEnrollment(Event $event, array $validated): ?string
     {
-        $amounts = array_filter([
-            $this->organizationRolePaymentAmount($event, $validated),
-            $this->organizationOverLimitPaymentAmount($event, $validated),
-        ], fn (?string $amount): bool => $amount !== null);
+        $rolePaymentAmount = $this->organizationRolePaymentAmount($event, $validated);
 
-        if ($amounts === []) {
-            return null;
+        if ($rolePaymentAmount !== null) {
+            return $rolePaymentAmount;
         }
 
-        return number_format(array_sum(array_map('floatval', $amounts)), 2, '.', '');
+        $overLimitPaymentAmount = $this->organizationOverLimitPaymentAmount($event, $validated);
+
+        if ($overLimitPaymentAmount !== null) {
+            return $overLimitPaymentAmount;
+        }
+
+        return $this->defaultPaymentAmountForEnrollment($event, $validated);
     }
 
     private function organizationRolePaymentAmount(Event $event, array $validated): ?string
@@ -229,13 +267,9 @@ class EnrollmentController extends Controller
             return null;
         }
 
-        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($validated);
-
-        if (! $organizationType || ! $organizationName) {
-            return null;
-        }
-
-        $organization = $this->eventOrganization($event, $organizationType, $organizationName);
+        $organization = $role === 'docent'
+            ? $this->eventVerenigingForEducation($event, $validated)
+            : $this->eventOrganizationForPayment($event, $validated);
 
         if (! $organization) {
             return null;
@@ -245,21 +279,30 @@ class EnrollmentController extends Controller
             ? 'student_payment_amount'
             : 'docent_payment_amount';
 
-        $mustPayColumn = $role === 'student'
-            ? 'students_always_pay'
-            : 'docents_always_pay';
+        $amount = $organization->pivot?->{$pivotColumn};
 
-        if (! ($organization->pivot?->{$mustPayColumn} ?? false)) {
+        $mustPay = ($validated['is_organization_member'] ?? false)
+            ? ($organization->pivot?->members_must_pay ?? false)
+            : ($amount !== null && (float) $amount > 0);
+
+        if (! $mustPay) {
             return null;
         }
 
-        $amount = $organization->pivot?->{$pivotColumn};
+        if (
+            ($validated['is_organization_member'] ?? false)
+            && ($amount === null || (float) $amount <= 0)
+        ) {
+            $amount = $organization->pivot?->over_limit_payment_amount;
+        }
 
         if ($amount === null || (float) $amount <= 0) {
             throw ValidationException::withMessages([
-                'payment' => $role === 'student'
-                    ? 'Voor deze partner of vereniging is geen studentenprijs ingesteld.'
-                    : 'Voor deze partner of vereniging is geen docentenprijs ingesteld.',
+                'payment' => ($validated['is_organization_member'] ?? false)
+                    ? 'Voor deze partner of vereniging is geen ledenprijs ingesteld.'
+                    : ($role === 'student'
+                        ? 'Voor deze partner of vereniging is geen studentenprijs ingesteld.'
+                        : 'Voor deze partner of vereniging is geen docentenprijs ingesteld.'),
             ]);
         }
 
@@ -268,11 +311,11 @@ class EnrollmentController extends Controller
 
     private function organizationOverLimitPaymentAmount(Event $event, array $validated): ?string
     {
-        if (($validated['type'] ?? null) !== 'student') {
+        if (! in_array($validated['type'] ?? null, ['student', 'docent', 'partner-bedrijf'], true)) {
             return null;
         }
 
-        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($validated);
+        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($event, $validated);
 
         if (! $organizationType || ! $organizationName) {
             return null;
@@ -281,6 +324,13 @@ class EnrollmentController extends Controller
         $organization = $this->eventOrganization($event, $organizationType, $organizationName);
 
         if (! $organization) {
+            return null;
+        }
+
+        if (
+            ($validated['is_organization_member'] ?? false)
+            && ! ($organization->pivot?->members_must_pay ?? false)
+        ) {
             return null;
         }
 
@@ -305,14 +355,48 @@ class EnrollmentController extends Controller
 
         if ($overLimitPaymentAmount === null || (float) $overLimitPaymentAmount <= 0) {
             throw ValidationException::withMessages([
-                'payment' => 'Voor deze partner of vereniging is geen prijs per extra persoon ingesteld.',
+                'payment' => 'Voor deze partner of vereniging is geen prijs voor extra personen ingesteld.',
             ]);
         }
 
-        return number_format($overLimitGuests * (float) $overLimitPaymentAmount, 2, '.', '');
+        return number_format((float) $overLimitPaymentAmount, 2, '.', '');
     }
 
-    private function paymentOrganizationForEnrollment(array $validated): array
+    private function defaultPaymentAmountForEnrollment(Event $event, array $validated): ?string
+    {
+        if (! $this->shouldUseDefaultPaymentAmount($event, $validated)) {
+            return null;
+        }
+
+        $amount = $event->default_payment_amount;
+
+        if ($amount === null || (float) $amount <= 0) {
+            throw ValidationException::withMessages([
+                'payment' => 'Voor dit event is geen standaardprijs ingesteld.',
+            ]);
+        }
+
+        return number_format((float) $amount, 2, '.', '');
+    }
+
+    private function shouldUseDefaultPaymentAmount(Event $event, array $validated): bool
+    {
+        if (! filled($validated['education'] ?? null)) {
+            return false;
+        }
+
+        if (filled($validated['partner_organization_type'] ?? null) && filled($validated['partner_organization_name'] ?? null)) {
+            return false;
+        }
+
+        if (($validated['education'] ?? null) === EducationOptions::OTHER) {
+            return true;
+        }
+
+        return ! $this->eventVerenigingForEducation($event, $validated);
+    }
+
+    private function paymentOrganizationForEnrollment(Event $event, array $validated): array
     {
         if (($validated['type'] ?? null) === 'student') {
             $organizationType = $validated['partner_organization_type'] ?? null;
@@ -322,7 +406,9 @@ class EnrollmentController extends Controller
                 return [$organizationType, $organizationName];
             }
 
-            $verenigingName = $validated['student_association'] ?? null;
+            $verenigingName = $this->eventVerenigingForEducation($event, $validated)?->name
+                ?? $validated['student_association']
+                ?? null;
 
             if (! $verenigingName || $verenigingName === 'anders') {
                 return [null, null];
@@ -331,18 +417,27 @@ class EnrollmentController extends Controller
             return ['vereniging', $verenigingName];
         }
 
-        if (($validated['type'] ?? null) === 'docent') {
+        if (($validated['type'] ?? null) === 'partner-bedrijf') {
             $organizationType = $validated['partner_organization_type'] ?? null;
             $organizationName = $validated['partner_organization_name'] ?? null;
 
-            if (! $organizationType || ! $organizationName) {
-                return [null, null];
+            if ($organizationType && $organizationName) {
+                return [$organizationType, $organizationName];
             }
-
-            return [$organizationType, $organizationName];
         }
 
         return [null, null];
+    }
+
+    private function eventVerenigingForEducation(Event $event, array $validated): ?Vereniging
+    {
+        $education = $validated['education'] ?? null;
+
+        if (! $education || $education === EducationOptions::OTHER) {
+            return null;
+        }
+
+        return $event->verenigingen->firstWhere('education', $education);
     }
 
     private function eventOrganization(Event $event, string $organizationType, string $organizationName): Partner|Vereniging|null
@@ -356,6 +451,17 @@ class EnrollmentController extends Controller
         }
 
         return null;
+    }
+
+    private function eventOrganizationForPayment(Event $event, array $validated): Partner|Vereniging|null
+    {
+        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($event, $validated);
+
+        if (! $organizationType || ! $organizationName) {
+            return null;
+        }
+
+        return $this->eventOrganization($event, $organizationType, $organizationName);
     }
 
     private function currentOrganizationGuestAmount(Event $event, string $organizationType, string $organizationName): int
@@ -396,7 +502,7 @@ class EnrollmentController extends Controller
 
     private function shouldValidatePartnerOrganization(array $validated): bool
     {
-        return in_array($validated['type'] ?? null, ['docent', 'partner-bedrijf'], true)
+        return ($validated['type'] ?? null) === 'partner-bedrijf'
             || filled($validated['partner_organization_type'] ?? null)
             || filled($validated['partner_organization_name'] ?? null);
     }
