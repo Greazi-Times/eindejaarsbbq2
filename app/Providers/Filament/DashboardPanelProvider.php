@@ -30,6 +30,7 @@ class DashboardPanelProvider extends PanelProvider
             ->id('dashboard')
             ->path('dashboard')
             ->viteTheme('resources/css/filament/dashboard/theme.css')
+            ->brandName('EindejaarsBBQ.nl')
             ->login()
             ->colors([
                 'primary' => Color::Orange,

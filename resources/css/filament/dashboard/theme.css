@@ -4,17 +4,338 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
-/* Sidebar container */
+:root {
+    --dashboard-bg: hsl(24 20% 9%);
+    --dashboard-surface: hsl(24 18% 13% / 0.88);
+    --dashboard-surface-strong: hsl(24 18% 16% / 0.94);
+    --dashboard-surface-soft: hsl(24 16% 18% / 0.72);
+    --dashboard-border: hsl(36 32% 84% / 0.14);
+    --dashboard-text: hsl(0 0% 98%);
+    --dashboard-text-muted: hsl(32 26% 76%);
+    --dashboard-primary: hsl(14 93% 58%);
+    --dashboard-secondary: hsl(42 91% 58%);
+    --dashboard-accent: hsl(157 56% 42%);
+    --dashboard-shadow: 0 20px 45px rgba(0, 0, 0, 0.24);
+}
+
+html.fi,
+html.fi.dark {
+    background-color: var(--dashboard-bg);
+}
+
+.fi-body {
+    background:
+        linear-gradient(180deg, rgba(20, 13, 10, 0.35) 0%, rgba(20, 13, 10, 0.94) 100%),
+        radial-gradient(circle at top left, rgba(220, 153, 86, 0.24), transparent 34%),
+        radial-gradient(circle at top right, rgba(249, 197, 84, 0.18), transparent 28%),
+        url('/images/hero-2.jpg') no-repeat center top / cover,
+        var(--dashboard-bg);
+    color: var(--dashboard-text);
+}
+
+.fi-body::before,
+.fi-body::after {
+    content: '';
+    position: fixed;
+    pointer-events: none;
+    inset: auto;
+    z-index: 0;
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.3;
+}
+
+.fi-body::before {
+    top: 3.5rem;
+    right: 0;
+    width: 28rem;
+    height: 28rem;
+    background-image: url('/images/shape-2.svg');
+}
+
+.fi-body::after {
+    bottom: 0;
+    left: 0;
+    width: 32rem;
+    height: 32rem;
+    background-image: url('/images/shape-1.svg');
+    opacity: 0.24;
+}
+
+.fi-layout,
+.fi-main-ctn,
+.fi-main,
+.fi-page {
+    position: relative;
+    z-index: 1;
+}
+
+.fi-main {
+    @apply py-8 lg:px-10;
+}
+
+.fi-page {
+    @apply gap-y-7;
+}
+
+.fi-page-header-main-ctn,
+.fi-page-content {
+    @apply mx-auto w-full max-w-7xl;
+}
+
+.fi-logo {
+    @apply text-base font-bold text-white;
+    letter-spacing: 0.02em;
+}
+
+.fi-logo::before {
+    content: '';
+    display: inline-block;
+    width: 1.9rem;
+    height: 1.9rem;
+    margin-right: 0.75rem;
+    vertical-align: middle;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, var(--dashboard-primary), var(--dashboard-secondary));
+    box-shadow: 0 10px 24px rgba(234, 96, 42, 0.28);
+}
+
+.fi-header-heading {
+    @apply text-3xl font-semibold text-white;
+}
+
+.fi-header-subheading {
+    color: color-mix(in srgb, var(--dashboard-text-muted) 90%, white 10%);
+    @apply text-base;
+}
+
+.fi-topbar {
+    background: color-mix(in srgb, var(--dashboard-bg) 84%, transparent);
+    border-bottom: 1px solid var(--dashboard-border);
+    backdrop-filter: blur(20px);
+    @apply shadow-none ring-0;
+}
+
+.fi-topbar .fi-input,
+.fi-topbar .fi-input-wrp {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
 .fi-sidebar {
-    background-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.08);
+    background:
+        linear-gradient(180deg, rgba(20, 13, 10, 0.92), rgba(20, 13, 10, 0.82)),
+        rgba(20, 13, 10, 0.84);
+    border-inline-end: 1px solid var(--dashboard-border);
+    backdrop-filter: blur(20px);
+    @apply shadow-none ring-0;
 }
 
-.dark .fi-sidebar {
-    background-color: rgba(43, 43, 43, 0.3);
+.fi-sidebar-header {
+    @apply justify-start px-6;
+    border-bottom: 1px solid var(--dashboard-border);
+    background: transparent;
 }
 
-/* Optional: remove the grey default */
-.fi-sidebar::before {
-    display: none;
+.fi-sidebar-nav {
+    @apply gap-y-6 px-4 py-6;
+}
+
+.fi-sidebar-nav-groups {
+    @apply gap-y-6;
+}
+
+.fi-sidebar-group-label {
+    @apply px-2 text-xs font-semibold uppercase;
+    color: color-mix(in srgb, var(--dashboard-text-muted) 72%, transparent);
+    letter-spacing: 0.04em;
+}
+
+.fi-sidebar-item-btn,
+.fi-sidebar-group-dropdown-trigger-btn,
+.fi-sidebar-database-notifications-btn {
+    @apply rounded-md px-3 py-2.5;
+}
+
+.fi-sidebar-item-label,
+.fi-topbar-item-label {
+    color: color-mix(in srgb, var(--dashboard-text) 92%, transparent);
+}
+
+.fi-sidebar-item-btn > .fi-icon,
+.fi-sidebar-group-btn > .fi-icon,
+.fi-sidebar-group-dropdown-trigger-btn > .fi-icon,
+.fi-topbar-item-btn > .fi-icon {
+    color: color-mix(in srgb, var(--dashboard-text-muted) 65%, transparent);
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background:
+        linear-gradient(135deg, rgba(234, 96, 42, 0.18), rgba(249, 197, 84, 0.14)),
+        rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(249, 197, 84, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon,
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-label,
+.fi-topbar-item.fi-active .fi-topbar-item-label,
+.fi-topbar-item.fi-active .fi-topbar-item-btn > .fi-icon {
+    color: #fff3df;
+}
+
+.fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn,
+.fi-topbar-item-btn,
+.fi-sidebar-group-dropdown-trigger-btn {
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn:hover,
+.fi-topbar-item-btn:hover,
+.fi-sidebar-group-dropdown-trigger-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.fi-wi {
+    @apply gap-5 lg:gap-6;
+}
+
+.fi-wi-widget > .fi-section,
+.fi-wi-stats-overview-stat,
+.fi-wi-table .fi-ta-ctn {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+        var(--dashboard-surface);
+    border: 1px solid var(--dashboard-border);
+    box-shadow: var(--dashboard-shadow);
+    backdrop-filter: blur(16px);
+}
+
+.fi-wi-widget > .fi-section,
+.fi-wi-stats-overview-stat,
+.fi-wi-table .fi-ta-ctn {
+    @apply overflow-hidden rounded-lg ring-0;
+}
+
+.fi-section-header,
+.fi-wi-table .fi-ta-header-ctn {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+    border-bottom: 1px solid var(--dashboard-border);
+}
+
+.fi-section-header-heading,
+.fi-wi-table .fi-ta-header-heading {
+    @apply text-base font-semibold text-white;
+}
+
+.fi-section-header-description,
+.fi-wi-table .fi-ta-header-description {
+    color: color-mix(in srgb, var(--dashboard-text-muted) 88%, transparent);
+    @apply text-sm;
+}
+
+.fi-wi-stats-overview-stat {
+    @apply p-6 transition duration-200 hover:-translate-y-0.5;
+}
+
+.fi-wi-stats-overview-stat::before {
+    content: '';
+    @apply absolute inset-x-0 top-0 h-1;
+    background: linear-gradient(90deg, var(--dashboard-primary), var(--dashboard-secondary));
+}
+
+.fi-wi-stats-overview-stat .fi-icon {
+    @apply rounded-md p-1;
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffe3c4;
+}
+
+.fi-wi-stats-overview-stat-label {
+    color: color-mix(in srgb, var(--dashboard-text-muted) 92%, white 8%);
+    @apply text-sm font-semibold;
+}
+
+.fi-wi-stats-overview-stat-value {
+    @apply text-3xl font-semibold text-white;
+}
+
+.fi-wi-stats-overview-stat-description {
+    color: color-mix(in srgb, var(--dashboard-text-muted) 86%, transparent);
+    @apply text-sm;
+}
+
+.fi-wi-table .fi-ta-header {
+    @apply px-6 py-5;
+}
+
+.fi-wi-table .fi-ta-content-ctn {
+    @apply rounded-none border-0;
+    background: transparent;
+}
+
+.fi-wi-table .fi-ta-table thead {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.fi-wi-table .fi-ta-header-cell {
+    color: color-mix(in srgb, var(--dashboard-text-muted) 82%, transparent);
+    @apply text-xs font-semibold uppercase;
+    letter-spacing: 0.04em;
+}
+
+.fi-wi-table .fi-ta-row {
+    border-color: var(--dashboard-border);
+    transition: background-color 160ms ease;
+}
+
+.fi-wi-table .fi-ta-row:hover {
+    background:
+        linear-gradient(90deg, rgba(234, 96, 42, 0.08), rgba(249, 197, 84, 0.04)),
+        rgba(255, 255, 255, 0.015);
+}
+
+.fi-wi-table .fi-ta-cell {
+    border-color: var(--dashboard-border);
+    color: color-mix(in srgb, var(--dashboard-text) 95%, transparent);
+}
+
+.fi-badge {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: none;
+}
+
+.fi-badge.fi-color {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.fi-ac-btn-action,
+.fi-btn {
+    box-shadow: none;
+}
+
+.fi-input,
+.fi-input-wrp {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.fi-input::placeholder {
+    color: color-mix(in srgb, var(--dashboard-text-muted) 72%, transparent);
+}
+
+@media (max-width: 1023px) {
+    .fi-body::before,
+    .fi-body::after {
+        opacity: 0.18;
+    }
+
+    .fi-main {
+        @apply px-4 py-6;
+    }
+
+    .fi-logo::before {
+        width: 1.65rem;
+        height: 1.65rem;
+        margin-right: 0.625rem;
+    }
 }
