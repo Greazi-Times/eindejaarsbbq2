@@ -46,7 +46,6 @@ Route::get('/', function () {
                 'name' => $partner->name,
                 'logo' => $logoUrl($partner->logo),
                 'website' => $partner->website,
-                'students_must_pay' => $partner->students_must_pay,
             ])->values(),
 
             'verenigingen' => $activeEvent->verenigingen->map(fn ($vereniging) => [
@@ -54,7 +53,6 @@ Route::get('/', function () {
                 'name' => $vereniging->name,
                 'logo' => $logoUrl($vereniging->logo),
                 'website' => $vereniging->website,
-                'students_must_pay' => $vereniging->students_must_pay,
             ])->values(),
         ] : null,
     ]);

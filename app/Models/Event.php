@@ -14,13 +14,11 @@ class Event extends Model
         'ends_at',
         'location',
         'description',
-        'student_payment_amount',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
-        'student_payment_amount' => 'decimal:2',
     ];
 
     public function partners(): BelongsToMany
@@ -29,6 +27,10 @@ class Event extends Model
             ->withPivot([
                 'free_guest_limit',
                 'over_limit_payment_amount',
+                'student_payment_amount',
+                'students_always_pay',
+                'docent_payment_amount',
+                'docents_always_pay',
             ]);
     }
 
@@ -43,6 +45,10 @@ class Event extends Model
             ->withPivot([
                 'free_guest_limit',
                 'over_limit_payment_amount',
+                'student_payment_amount',
+                'students_always_pay',
+                'docent_payment_amount',
+                'docents_always_pay',
             ])
             ->withTimestamps();
     }

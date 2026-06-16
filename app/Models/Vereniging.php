@@ -14,11 +14,6 @@ class Vereniging extends Model
         'logo',
         'website',
         'description',
-        'students_must_pay',
-    ];
-
-    protected $casts = [
-        'students_must_pay' => 'boolean',
     ];
 
     public function events(): BelongsToMany
@@ -32,6 +27,10 @@ class Vereniging extends Model
             ->withPivot([
                 'free_guest_limit',
                 'over_limit_payment_amount',
+                'student_payment_amount',
+                'students_always_pay',
+                'docent_payment_amount',
+                'docents_always_pay',
             ])
             ->withTimestamps();
     }

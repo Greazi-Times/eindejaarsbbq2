@@ -85,10 +85,11 @@ test('enrollments table masks contact fields without the personal data permissio
         ->assertSee('j*******@example.com')
         ->assertDontSee('Jane Doe')
         ->assertDontSee('jane.doe@example.com')
+        ->assertTableActionHidden('togglePersonalDataVisibility')
         ->assertTableActionHidden('viewPersonalData', $enrollment);
 });
 
-test('enrollments table keeps contact fields masked and reveals them through an action with permission', function () {
+test('enrollments table keeps contact fields masked and can reveal them globally or per row with permission', function () {
     $user = panelUser([
         'ViewAny:Enrollment',
         'View:Enrollment',
@@ -111,6 +112,17 @@ test('enrollments table keeps contact fields masked and reveals them through an 
     $this->actingAs($user);
 
     Livewire::test(ListEnrollments::class)
+        ->assertSee('J*** D**')
+        ->assertSee('j*******@example.com')
+        ->assertDontSee('Jane Doe')
+        ->assertDontSee('jane.doe@example.com')
+        ->assertTableActionVisible('togglePersonalDataVisibility')
+        ->assertTableActionHasLabel('togglePersonalDataVisibility', 'Show personal details')
+        ->callTableAction('togglePersonalDataVisibility')
+        ->assertSee('Jane Doe')
+        ->assertSee('jane.doe@example.com')
+        ->assertTableActionHasLabel('togglePersonalDataVisibility', 'Hide personal details')
+        ->callTableAction('togglePersonalDataVisibility')
         ->assertSee('J*** D**')
         ->assertSee('j*******@example.com')
         ->assertDontSee('Jane Doe')
@@ -235,6 +247,79 @@ test('payment status column uses the requested status icons', function () {
     expect(paymentIconFor($column, $paid))->toBe('heroicon-o-check');
     expect(paymentIconFor($column, $failed))->toBe('heroicon-o-x-mark');
     expect(paymentIconFor($column, $waiting))->toBe('heroicon-o-exclamation-triangle');
+});
+
+test('enrollments table can filter by payment requirement and payment status', function () {
+    $user = panelUser([
+        'ViewAny:Enrollment',
+        'View:Enrollment',
+    ]);
+
+    $event = Event::create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addMonth(),
+    ]);
+
+    $notNeeded = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Free Person',
+        'email' => 'free@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+        'requires_payment' => false,
+    ]);
+
+    $paid = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Paid Person',
+        'email' => 'paid@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+        'requires_payment' => true,
+        'payment_status' => 'paid',
+    ]);
+
+    $failed = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Failed Person',
+        'email' => 'failed@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+        'requires_payment' => true,
+        'payment_status' => 'failed',
+    ]);
+
+    $waiting = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Waiting Person',
+        'email' => 'waiting@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+        'requires_payment' => true,
+        'payment_status' => 'open',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(ListEnrollments::class)
+        ->filterTable('requires_payment', true)
+        ->assertCanSeeTableRecords([$paid, $failed, $waiting])
+        ->assertCanNotSeeTableRecords([$notNeeded]);
+
+    Livewire::test(ListEnrollments::class)
+        ->filterTable('payment_status_group', 'paid')
+        ->assertCanSeeTableRecords([$paid])
+        ->assertCanNotSeeTableRecords([$notNeeded, $failed, $waiting]);
+
+    Livewire::test(ListEnrollments::class)
+        ->filterTable('payment_status_group', 'failed')
+        ->assertCanSeeTableRecords([$failed])
+        ->assertCanNotSeeTableRecords([$notNeeded, $paid, $waiting]);
+
+    Livewire::test(ListEnrollments::class)
+        ->filterTable('payment_status_group', 'waiting')
+        ->assertCanSeeTableRecords([$waiting])
+        ->assertCanNotSeeTableRecords([$notNeeded, $paid, $failed]);
 });
 
 function paymentIconFor(IconColumn $column, Enrollment $enrollment): string

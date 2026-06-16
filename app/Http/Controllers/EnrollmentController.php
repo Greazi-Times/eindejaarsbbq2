@@ -43,8 +43,8 @@ class EnrollmentController extends Controller
                 'education' => ['nullable', 'string', 'max:255'],
                 'custom_education' => ['nullable', 'string', 'max:255'],
 
-                'partner_organization_type' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'in:partner,vereniging'],
-                'partner_organization_name' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
+                'partner_organization_type' => ['required_if:type,partner-bedrijf', 'required_if:type,docent', 'nullable', 'string', 'in:partner,vereniging'],
+                'partner_organization_name' => ['required_if:type,partner-bedrijf', 'required_if:type,docent', 'nullable', 'string', 'max:255'],
                 'company_name' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
 
                 'guest_amount' => ['required', 'integer', 'min:1', 'max:3'],
@@ -69,7 +69,7 @@ class EnrollmentController extends Controller
         );
 
         if (
-            ($validated['type'] ?? null) === 'partner-bedrijf' &&
+            $this->shouldValidatePartnerOrganization($validated) &&
             ! $this->eventHasPartnerOrganization($event, $validated)
         ) {
             throw ValidationException::withMessages([
@@ -89,16 +89,15 @@ class EnrollmentController extends Controller
                 ]);
         }
 
-        $organizationPaymentAmount = $this->organizationOverLimitPaymentAmount($event, $validated);
-        $requiresPayment = $organizationPaymentAmount !== null
-            || $this->studentRequiresPayment($event, $validated);
+        $paymentAmount = $this->paymentAmountForEnrollment($event, $validated);
+        $requiresPayment = $paymentAmount !== null;
 
         $enrollment = Enrollment::create([
             ...$validated,
             'event_id' => $event->id,
             'requires_payment' => $requiresPayment,
             'payment_status' => $requiresPayment ? 'payment_pending' : null,
-            'payment_amount' => $organizationPaymentAmount,
+            'payment_amount' => $paymentAmount,
             'payment_currency' => $requiresPayment ? $mollie->currency() : null,
         ]);
 
@@ -193,8 +192,8 @@ class EnrollmentController extends Controller
             return 'De betaling kon niet worden gestart omdat Mollie nog niet is ingesteld.';
         }
 
-        if (str_contains($message, 'Student payment amount')) {
-            return 'De betaling kon niet worden gestart omdat er geen studentenprijs voor dit event is ingesteld.';
+        if (str_contains($message, 'Payment amount')) {
+            return 'De betaling kon niet worden gestart omdat er geen bedrag voor deze aanmelding is ingesteld.';
         }
 
         if (str_contains($message, 'payment could not be created')) {
@@ -208,25 +207,71 @@ class EnrollmentController extends Controller
         return 'De betaling kon niet worden gestart. Probeer het later opnieuw.';
     }
 
-    private function studentRequiresPayment(Event $event, array $validated): bool
+    private function paymentAmountForEnrollment(Event $event, array $validated): ?string
     {
-        if (($validated['type'] ?? null) !== 'student') {
-            return false;
+        $amounts = array_filter([
+            $this->organizationRolePaymentAmount($event, $validated),
+            $this->organizationOverLimitPaymentAmount($event, $validated),
+        ], fn (?string $amount): bool => $amount !== null);
+
+        if ($amounts === []) {
+            return null;
         }
 
-        $verenigingName = $validated['student_association'] ?? null;
+        return number_format(array_sum(array_map('floatval', $amounts)), 2, '.', '');
+    }
 
-        if (! $verenigingName || $verenigingName === 'anders') {
-            return false;
+    private function organizationRolePaymentAmount(Event $event, array $validated): ?string
+    {
+        $role = $validated['type'] ?? null;
+
+        if (! in_array($role, ['student', 'docent'], true)) {
+            return null;
         }
 
-        return $event->verenigingen
-            ->firstWhere('name', $verenigingName)
-            ?->students_must_pay ?? false;
+        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($validated);
+
+        if (! $organizationType || ! $organizationName) {
+            return null;
+        }
+
+        $organization = $this->eventOrganization($event, $organizationType, $organizationName);
+
+        if (! $organization) {
+            return null;
+        }
+
+        $pivotColumn = $role === 'student'
+            ? 'student_payment_amount'
+            : 'docent_payment_amount';
+
+        $mustPayColumn = $role === 'student'
+            ? 'students_always_pay'
+            : 'docents_always_pay';
+
+        if (! ($organization->pivot?->{$mustPayColumn} ?? false)) {
+            return null;
+        }
+
+        $amount = $organization->pivot?->{$pivotColumn};
+
+        if ($amount === null || (float) $amount <= 0) {
+            throw ValidationException::withMessages([
+                'payment' => $role === 'student'
+                    ? 'Voor deze partner of vereniging is geen studentenprijs ingesteld.'
+                    : 'Voor deze partner of vereniging is geen docentenprijs ingesteld.',
+            ]);
+        }
+
+        return number_format((float) $amount, 2, '.', '');
     }
 
     private function organizationOverLimitPaymentAmount(Event $event, array $validated): ?string
     {
+        if (($validated['type'] ?? null) !== 'student') {
+            return null;
+        }
+
         [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($validated);
 
         if (! $organizationType || ! $organizationName) {
@@ -270,6 +315,13 @@ class EnrollmentController extends Controller
     private function paymentOrganizationForEnrollment(array $validated): array
     {
         if (($validated['type'] ?? null) === 'student') {
+            $organizationType = $validated['partner_organization_type'] ?? null;
+            $organizationName = $validated['partner_organization_name'] ?? null;
+
+            if ($organizationType && $organizationName) {
+                return [$organizationType, $organizationName];
+            }
+
             $verenigingName = $validated['student_association'] ?? null;
 
             if (! $verenigingName || $verenigingName === 'anders') {
@@ -277,6 +329,17 @@ class EnrollmentController extends Controller
             }
 
             return ['vereniging', $verenigingName];
+        }
+
+        if (($validated['type'] ?? null) === 'docent') {
+            $organizationType = $validated['partner_organization_type'] ?? null;
+            $organizationName = $validated['partner_organization_name'] ?? null;
+
+            if (! $organizationType || ! $organizationName) {
+                return [null, null];
+            }
+
+            return [$organizationType, $organizationName];
         }
 
         return [null, null];
@@ -302,9 +365,9 @@ class EnrollmentController extends Controller
             ->where(function ($query) use ($organizationType, $organizationName): void {
                 if ($organizationType === 'partner') {
                     $query
-                        ->where('type', 'partner-bedrijf')
                         ->where('partner_organization_type', 'partner')
-                        ->where('partner_organization_name', $organizationName);
+                        ->where('partner_organization_name', $organizationName)
+                        ->whereIn('type', ['student', 'docent', 'partner-bedrijf']);
 
                     return;
                 }
@@ -317,12 +380,25 @@ class EnrollmentController extends Controller
                     })
                     ->orWhere(function ($query) use ($organizationName): void {
                         $query
+                            ->whereIn('type', ['student', 'docent'])
+                            ->where('partner_organization_type', 'vereniging')
+                            ->where('partner_organization_name', $organizationName);
+                    })
+                    ->orWhere(function ($query) use ($organizationName): void {
+                        $query
                             ->where('type', 'partner-bedrijf')
                             ->where('partner_organization_type', 'vereniging')
                             ->where('partner_organization_name', $organizationName);
                     });
             })
             ->sum('guest_amount');
+    }
+
+    private function shouldValidatePartnerOrganization(array $validated): bool
+    {
+        return in_array($validated['type'] ?? null, ['docent', 'partner-bedrijf'], true)
+            || filled($validated['partner_organization_type'] ?? null)
+            || filled($validated['partner_organization_name'] ?? null);
     }
 
     private function eventHasPartnerOrganization(Event $event, array $validated): bool

@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Partners\Schemas;
 
-use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
@@ -19,9 +18,6 @@ class PartnerInfolist
                     ->placeholder('-'),
                 TextEntry::make('website')
                     ->placeholder('-'),
-                IconEntry::make('students_must_pay')
-                    ->label('Studenten moeten betalen')
-                    ->boolean(),
                 TextEntry::make('description')
                     ->placeholder('-')
                     ->columnSpanFull(),

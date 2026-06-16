@@ -16,6 +16,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +24,13 @@ use Illuminate\Support\Str;
 
 class EnrollmentsTable
 {
+    private const FAILED_PAYMENT_STATUSES = [
+        'failed',
+        'canceled',
+        'cancelled',
+        'expired',
+    ];
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -34,11 +42,11 @@ class EnrollmentsTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('full_name')
                     ->label('Name')
-                    ->formatStateUsing(fn (?string $state): string => EnrollmentResource::formatFullNamePreview($state))
+                    ->formatStateUsing(fn (?string $state, $livewire): string => static::formatFullName($state, $livewire))
                     ->searchable(fn (): bool => EnrollmentResource::canViewPersonalData()),
                 TextColumn::make('email')
                     ->label('Email')
-                    ->formatStateUsing(fn (?string $state): string => EnrollmentResource::formatEmailPreview($state))
+                    ->formatStateUsing(fn (?string $state, $livewire): string => static::formatEmail($state, $livewire))
                     ->searchable(fn (): bool => EnrollmentResource::canViewPersonalData()),
                 TextColumn::make('organization')
                     ->label('Association / organization')
@@ -136,9 +144,25 @@ class EnrollmentsTable
                             ))
                             ->searchable()
                             ->preload(),
+                        TernaryFilter::make('requires_payment')
+                            ->label('Needs payment')
+                            ->trueLabel('Yes')
+                            ->falseLabel('No'),
+                        SelectFilter::make('payment_status_group')
+                            ->label('Payment status')
+                            ->options([
+                                'not_needed' => 'Not needed',
+                                'paid' => 'Success',
+                                'failed' => 'Failed',
+                                'waiting' => 'Waiting',
+                            ])
+                            ->query(fn (Builder $query, array $data): Builder => static::applyPaymentStatusFilter(
+                                $query,
+                                $data['value'] ?? null,
+                            )),
                     ], FiltersLayout::AboveContent)
                     ->deferFilters(false)
-                    ->filtersFormColumns(2)
+                    ->filtersFormColumns(4)
                     ->persistFiltersInSession(),
             )
             ->recordActions([
@@ -170,6 +194,21 @@ class EnrollmentsTable
                 EditAction::make(),
             ])
             ->toolbarActions([
+                Action::make('togglePersonalDataVisibility')
+                    ->label(fn ($livewire): string => static::isPersonalDataVisible($livewire)
+                        ? 'Hide personal details'
+                        : 'Show personal details')
+                    ->icon(fn ($livewire): string => static::isPersonalDataVisible($livewire)
+                        ? 'heroicon-o-eye-slash'
+                        : 'heroicon-o-eye')
+                    ->color(fn ($livewire): string => static::isPersonalDataVisible($livewire) ? 'warning' : 'gray')
+                    ->action(function ($livewire): void {
+                        if ($livewire instanceof ListEnrollments) {
+                            $livewire->togglePersonalDataVisibility();
+                        }
+                    })
+                    ->visible(fn ($livewire): bool => $livewire instanceof ListEnrollments
+                        && EnrollmentResource::canViewPersonalData()),
                 Action::make('exportCsv')
                     ->label('CSV exporteren')
                     ->icon('heroicon-o-arrow-down-tray')
@@ -265,6 +304,29 @@ class EnrollmentsTable
         };
     }
 
+    private static function formatFullName(?string $name, mixed $livewire): string
+    {
+        if (static::isPersonalDataVisible($livewire)) {
+            return filled($name) ? $name : '-';
+        }
+
+        return EnrollmentResource::formatFullNamePreview($name);
+    }
+
+    private static function formatEmail(?string $email, mixed $livewire): string
+    {
+        if (static::isPersonalDataVisible($livewire)) {
+            return filled($email) ? $email : '-';
+        }
+
+        return EnrollmentResource::formatEmailPreview($email);
+    }
+
+    private static function isPersonalDataVisible(mixed $livewire): bool
+    {
+        return $livewire instanceof ListEnrollments && $livewire->isPersonalDataVisible();
+    }
+
     private static function enrollmentOrganization(Enrollment $record): string
     {
         if (filled($record->partner_organization_name)) {
@@ -329,6 +391,30 @@ class EnrollmentsTable
                 ->orWhere('student_association', $value)
                 ->orWhere('company_name', $value);
         });
+    }
+
+    private static function applyPaymentStatusFilter(Builder $query, ?string $value): Builder
+    {
+        return match ($value) {
+            'not_needed' => $query->where('requires_payment', false),
+            'paid' => $query
+                ->where('requires_payment', true)
+                ->where('payment_status', 'paid'),
+            'failed' => $query
+                ->where('requires_payment', true)
+                ->whereIn('payment_status', self::FAILED_PAYMENT_STATUSES),
+            'waiting' => $query
+                ->where('requires_payment', true)
+                ->where(function (Builder $query): void {
+                    $query
+                        ->whereNull('payment_status')
+                        ->orWhereNotIn('payment_status', [
+                            'paid',
+                            ...self::FAILED_PAYMENT_STATUSES,
+                        ]);
+                }),
+            default => $query,
+        };
     }
 
     private static function paymentStatusIcon(Enrollment $record): string

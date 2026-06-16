@@ -31,6 +31,20 @@ type FlashPayment = {
     action_label?: string | null;
 };
 
+type OrganizationOption = {
+    label: string;
+    value: string;
+    name: string;
+    type: 'partner' | 'vereniging';
+    description: string;
+};
+
+type BasicOption = {
+    label: string;
+    value: string;
+    description?: string;
+};
+
 const showCalendarModal = ref(false);
 const dismissedFlashBanner = ref(false);
 const localFlashBanner = ref<FlashPayment | null>(null);
@@ -74,14 +88,12 @@ const props = withDefaults(
                 name: string;
                 logo: string | null;
                 website: string | null;
-                students_must_pay: boolean;
             }[];
             verenigingen: {
                 id: number;
                 name: string;
                 logo: string | null;
                 website: string | null;
-                students_must_pay: boolean;
             }[];
         } | null;
         flash?: {
@@ -228,27 +240,45 @@ const customOption = {
     value: 'anders',
 };
 
-const studentAssociationOptions = computed(() => [
+const isOrganizationOption = (
+    option: BasicOption | OrganizationOption | undefined,
+): option is OrganizationOption => {
+    return Boolean(option && 'name' in option && 'type' in option);
+};
+
+const studentAssociationOptions = computed<
+    (BasicOption | OrganizationOption)[]
+>(() => [
     ...eventVerenigingen.value.map((vereniging) => ({
         label: vereniging.name,
-        value: vereniging.name,
+        value: `vereniging:${vereniging.id}`,
+        name: vereniging.name,
+        type: 'vereniging' as const,
+        description: 'Vereniging van de Eindejaars BBQ',
     })),
-    customOption,
-]);
-
-const partnerOrganizationOptions = computed(() => [
     ...eventPartners.value.map((partner) => ({
         label: partner.name,
         value: `partner:${partner.id}`,
         name: partner.name,
-        type: 'partner',
+        type: 'partner' as const,
+        description: 'Partner van de Eindejaars BBQ',
+    })),
+    customOption,
+]);
+
+const partnerOrganizationOptions = computed<OrganizationOption[]>(() => [
+    ...eventPartners.value.map((partner) => ({
+        label: partner.name,
+        value: `partner:${partner.id}`,
+        name: partner.name,
+        type: 'partner' as const,
         description: 'Partner van de Eindejaars BBQ',
     })),
     ...eventVerenigingen.value.map((vereniging) => ({
         label: vereniging.name,
         value: `vereniging:${vereniging.id}`,
         name: vereniging.name,
-        type: 'vereniging',
+        type: 'vereniging' as const,
         description: 'Vereniging van de Eindejaars BBQ',
     })),
 ]);
@@ -406,6 +436,14 @@ const validateStep = () => {
         }
 
         if (
+            selectedTypes.value.includes('docent') &&
+            !selectedPartnerOrganization.value.length
+        ) {
+            stepErrors.value.partnerOrganization =
+                'Selecteer een partner of vereniging.';
+        }
+
+        if (
             selectedTypes.value.includes('partner-bedrijf') &&
             !companyName.value.trim()
         ) {
@@ -448,12 +486,22 @@ const selectedGuestAmount = computed({
     },
 });
 
+const selectedStudentOrganizationDetails = computed<OrganizationOption | null>(
+    () => {
+        const option = studentAssociationOptions.value.find(
+            (option) => option.value === selectedStudentAssociation.value[0],
+        );
+
+        return isOrganizationOption(option) ? option : null;
+    },
+);
+
 const selectedStudentAssociationName = computed(() => {
     if (selectedStudentAssociation.value[0] === 'anders') {
         return customStudentAssociation.value.trim();
     }
 
-    return selectedStudentAssociation.value[0] || '';
+    return selectedStudentOrganizationDetails.value?.name || '';
 });
 
 const selectedPartnerOrganizationDetails = computed(() => {
@@ -465,20 +513,37 @@ const selectedPartnerOrganizationDetails = computed(() => {
 });
 
 const selectedPartnerOrganizationTypeLabel = computed(() => {
-    return (
-        {
-            partner: 'Partner',
-            vereniging: 'Vereniging',
-        }[selectedPartnerOrganizationDetails.value?.type || ''] || ''
-    );
+    const type = selectedPartnerOrganizationDetails.value?.type;
+
+    if (!type) {
+        return '';
+    }
+
+    return {
+        partner: 'Partner',
+        vereniging: 'Vereniging',
+    }[type];
 });
 
 const selectedPartnerOrganizationName = computed(() => {
     return selectedPartnerOrganizationDetails.value?.name || '';
 });
 
-const selectedPartnerOrganizationType = computed(() => {
-    return selectedPartnerOrganizationDetails.value?.type || '';
+const selectedEnrollmentOrganizationDetails =
+    computed<OrganizationOption | null>(() => {
+        if (selectedTypes.value.includes('student')) {
+            return selectedStudentOrganizationDetails.value;
+        }
+
+        return selectedPartnerOrganizationDetails.value;
+    });
+
+const selectedEnrollmentOrganizationName = computed(() => {
+    return selectedEnrollmentOrganizationDetails.value?.name || '';
+});
+
+const selectedEnrollmentOrganizationType = computed(() => {
+    return selectedEnrollmentOrganizationDetails.value?.type || '';
 });
 
 const selectedEducationName = computed(() => {
@@ -549,8 +614,11 @@ watch(selectedTypes, (types) => {
         customEducation.value = '';
     }
 
-    if (!types.includes('partner-bedrijf')) {
+    if (!types.includes('docent') && !types.includes('partner-bedrijf')) {
         selectedPartnerOrganization.value = [];
+    }
+
+    if (!types.includes('partner-bedrijf')) {
         companyName.value = '';
         guestAmount.value = '1';
     }
@@ -592,7 +660,7 @@ const reviewDetails = computed(() => {
             value: selectedTypeLabel.value || 'Niet geselecteerd',
         },
         {
-            label: 'Vereniging',
+            label: 'Vereniging / partner',
             value: selectedStudentAssociationName.value,
         },
         {
@@ -664,7 +732,9 @@ const submitEnrollment = () => {
             full_name: fullName.value,
             email: email.value,
             type: selectedTypes.value[0],
-            student_association: selectedStudentAssociation.value[0] || null,
+            student_association: selectedTypes.value.includes('student')
+                ? selectedStudentAssociationName.value || null
+                : null,
             custom_student_association:
                 selectedStudentAssociation.value[0] === 'anders'
                     ? customStudentAssociation.value
@@ -672,9 +742,9 @@ const submitEnrollment = () => {
             education: selectedEducation.value[0] || null,
             custom_education: customEducation.value || null,
             partner_organization_type:
-                selectedPartnerOrganizationType.value || null,
+                selectedEnrollmentOrganizationType.value || null,
             partner_organization_name:
-                selectedPartnerOrganizationName.value || null,
+                selectedEnrollmentOrganizationName.value || null,
             company_name: companyName.value || null,
             guest_amount: Number(guestAmount.value),
             dietary_preferences: guestDietaryPreferences.value,
@@ -1077,8 +1147,8 @@ const addToGoogleCalendar = () => {
                             <CheckboxGroup
                                 v-if="selectedTypes.includes('student')"
                                 v-model="selectedStudentAssociation"
-                                label="Vereniging"
-                                description="Selecteer je vereniging."
+                                label="Vereniging / partner"
+                                description="Selecteer de vereniging of partner waar je bij hoort."
                                 :error="stepErrors.studentAssociation"
                                 required
                                 :max="1"
@@ -1135,6 +1205,21 @@ const addToGoogleCalendar = () => {
                                 placeholder="Vul je opleiding in"
                                 :error="stepErrors.customEducation"
                                 required
+                            />
+
+                            <CheckboxGroup
+                                v-if="selectedTypes.includes('docent')"
+                                v-model="selectedPartnerOrganization"
+                                label="Partner / vereniging"
+                                description="Selecteer de partner of vereniging waar je bij hoort."
+                                :error="
+                                    stepErrors.partnerOrganization ||
+                                    stepErrors.partner_organization_name ||
+                                    stepErrors.partner_organization_type
+                                "
+                                required
+                                :max="1"
+                                :options="partnerOrganizationOptions"
                             />
 
                             <FormGrid
