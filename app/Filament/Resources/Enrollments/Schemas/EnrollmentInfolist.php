@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Enrollments\Schemas;
 
+use App\Filament\Resources\Enrollments\EnrollmentResource;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
@@ -14,9 +15,12 @@ class EnrollmentInfolist
             ->components([
                 TextEntry::make('event.name')
                     ->label('Event'),
-                TextEntry::make('full_name'),
+                TextEntry::make('full_name')
+                    ->label('Name')
+                    ->formatStateUsing(fn (?string $state): string => EnrollmentResource::formatFullNamePreview($state)),
                 TextEntry::make('email')
-                    ->label('E-mailadres'),
+                    ->label('Email')
+                    ->formatStateUsing(fn (?string $state): string => EnrollmentResource::formatEmailPreview($state)),
                 TextEntry::make('type'),
                 TextEntry::make('student_association')
                     ->placeholder('-'),
@@ -67,8 +71,8 @@ class EnrollmentInfolist
                     ->label('Mollie betaling')
                     ->placeholder('-'),
                 TextEntry::make('paid_at')
-                    ->label('Betaald op')
-                    ->dateTime()
+                    ->label('Paid at')
+                    ->date()
                     ->placeholder('-'),
                 TextEntry::make('notes')
                     ->placeholder('-')

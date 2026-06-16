@@ -236,6 +236,7 @@ return [
         'ExportEnrollments' => 'Inschrijvingen exporteren',
         'ManagePayments' => 'Betalingen beheren',
         'SendEnrollmentEmails' => 'Aanmelding e-mails versturen',
+        'ViewEnrollmentPersonalData' => 'Persoonsgegevens van aanmeldingen bekijken',
     ],
 
     /*
