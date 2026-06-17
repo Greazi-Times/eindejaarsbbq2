@@ -83,6 +83,7 @@ const selectedRegistrationOrganization = ref<string[]>([]);
 const selectedOrganizationMembership = ref<string[]>([]);
 
 const customEducation = ref('');
+const companyName = ref('');
 
 const guestAmount = ref('1');
 
@@ -470,6 +471,13 @@ const validateStep = () => {
             stepErrors.value.partnerOrganization =
                 'Selecteer een partner of vereniging.';
         }
+
+        if (
+            selectedTypes.value.includes('partner-bedrijf') &&
+            !companyName.value.trim()
+        ) {
+            stepErrors.value.companyName = 'Vul de bedrijfsnaam in.';
+        }
     }
 
     return Object.keys(stepErrors.value).length === 0;
@@ -689,6 +697,7 @@ watch(guestAmount, (value) => {
 watch(selectedTypes, (types) => {
     if (!types.includes('partner-bedrijf')) {
         guestAmount.value = '1';
+        companyName.value = '';
     }
 
     if (!types.some((type) => ['student', 'docent'].includes(type))) {
@@ -928,6 +937,10 @@ const reviewDetails = computed(() => {
             value: selectedRegistrationOrganizationOption.value?.name || '',
         },
         {
+            label: 'Bedrijfsnaam',
+            value: companyName.value,
+        },
+        {
             label: 'Lid van vereniging',
             value:
                 isOrganizationMember.value === null
@@ -968,6 +981,7 @@ const resetEnrollmentForm = () => {
     selectedRegistrationOrganization.value = [];
     selectedOrganizationMembership.value = [];
     customEducation.value = '';
+    companyName.value = '';
     guestAmount.value = '1';
     guestDietaryPreferences.value = {};
     stepErrors.value = {};
@@ -1006,7 +1020,9 @@ const submitEnrollment = () => {
             is_organization_member: shouldAskOrganizationMembership.value
                 ? isOrganizationMember.value
                 : null,
-            company_name: null,
+            company_name: selectedTypes.value.includes('partner-bedrijf')
+                ? companyName.value
+                : null,
             guest_amount: Number(guestAmount.value),
             dietary_preferences: guestDietaryPreferences.value,
         },
@@ -1436,6 +1452,19 @@ const addToGoogleCalendar = () => {
                                 description="Selecteer dit alleen als je aanmelding bij een zichtbare partner of losse vereniging hoort."
                                 :max="1"
                                 :options="registrationOrganizationOptions"
+                            />
+
+                            <Input
+                                v-if="selectedTypes.includes('partner-bedrijf')"
+                                v-model="companyName"
+                                name="companyName"
+                                label="Bedrijfsnaam"
+                                placeholder="Vul de bedrijfsnaam in"
+                                :error="
+                                    stepErrors.companyName ||
+                                    stepErrors.company_name
+                                "
+                                required
                             />
 
                             <CheckboxGroup

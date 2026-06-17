@@ -47,7 +47,7 @@ class EnrollmentController extends Controller
                 'partner_organization_type' => ['nullable', 'string', 'in:partner,vereniging'],
                 'partner_organization_name' => ['nullable', 'string', 'max:255'],
                 'is_organization_member' => ['nullable', 'boolean'],
-                'company_name' => ['nullable', 'string', 'max:255'],
+                'company_name' => ['required_if:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
 
                 'guest_amount' => ['required', 'integer', 'min:1', 'max:3'],
 
@@ -63,6 +63,7 @@ class EnrollmentController extends Controller
                 'custom_education.required_if' => 'Vul je opleiding in.',
                 'partner_organization_type.in' => 'Selecteer een geldig organisatietype.',
                 'is_organization_member.boolean' => 'Selecteer een geldige ledenstatus.',
+                'company_name.required_if' => 'Vul de bedrijfsnaam in.',
                 'guest_amount.required' => 'Aantal personen is verplicht.',
                 'guest_amount.integer' => 'Aantal personen moet een getal zijn.',
                 'guest_amount.min' => 'Aantal personen moet minimaal 1 zijn.',

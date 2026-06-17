@@ -94,6 +94,41 @@ it('stores a partner enrollment for a selected partner organization', function (
         ->and($enrollment->requires_payment)->toBeFalse();
 });
 
+it('requires a company name for partner enrollments', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $partner = Partner::query()->create([
+        'name' => 'Partner Company',
+    ]);
+
+    $event->partners()->attach($partner);
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Partner Tester',
+            'email' => 'partner-no-company@example.com',
+            'type' => 'partner-bedrijf',
+            'partner_organization_type' => 'partner',
+            'partner_organization_name' => $partner->name,
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $response
+        ->assertRedirect('/aanmelden')
+        ->assertSessionHasErrors([
+            'company_name' => 'Vul de bedrijfsnaam in.',
+        ]);
+
+    expect(Enrollment::query()->count())->toBe(0);
+});
+
 it('stores a partner enrollment for a selected vereniging organization', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
@@ -589,6 +624,7 @@ it('charges partner enrollments with the vereniging extra persons total price af
             'partner_organization_type' => 'vereniging',
             'partner_organization_name' => $vereniging->name,
             'is_organization_member' => false,
+            'company_name' => 'Over Limit BV',
             'guest_amount' => 2,
             'dietary_preferences' => [],
         ]);
@@ -974,6 +1010,7 @@ it('rejects over-limit enrollments when the extra person price is missing', func
             'partner_organization_type' => 'vereniging',
             'partner_organization_name' => $vereniging->name,
             'is_organization_member' => false,
+            'company_name' => 'No Price BV',
             'guest_amount' => 2,
             'dietary_preferences' => [],
         ]);
