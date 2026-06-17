@@ -17,10 +17,21 @@ class AppVersion
         $revision = self::gitRevision();
 
         if ($packageVersion && $revision) {
-            return "{$packageVersion}-{$revision}";
+            return self::withEnvironmentSuffix("{$packageVersion}-{$revision}");
         }
 
-        return $packageVersion ?: $revision;
+        $version = $packageVersion ?: $revision;
+
+        return $version ? self::withEnvironmentSuffix($version) : null;
+    }
+
+    private static function withEnvironmentSuffix(string $version): string
+    {
+        if (app()->environment('local')) {
+            return "{$version}-LOCAL";
+        }
+
+        return $version;
     }
 
     private static function packageVersion(): ?string
