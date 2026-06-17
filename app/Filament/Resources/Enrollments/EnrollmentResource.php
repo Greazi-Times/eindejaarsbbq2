@@ -20,6 +20,8 @@ use Illuminate\Support\Str;
 
 class EnrollmentResource extends Resource
 {
+    public const MANAGE_PAYMENTS_PERMISSION = 'ManagePayments';
+
     public const VIEW_PERSONAL_DATA_PERMISSION = 'ViewEnrollmentPersonalData';
 
     protected static ?string $model = Enrollment::class;
@@ -50,6 +52,18 @@ class EnrollmentResource extends Resource
     public static function canViewPersonalData(): bool
     {
         return Auth::user()?->can(self::VIEW_PERSONAL_DATA_PERMISSION) ?? false;
+    }
+
+    public static function canManagePayments(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole(config('filament-shield.super_admin.name', 'super_admin'))
+            || $user->can(self::MANAGE_PAYMENTS_PERMISSION);
     }
 
     public static function formatFullNamePreview(?string $name): string

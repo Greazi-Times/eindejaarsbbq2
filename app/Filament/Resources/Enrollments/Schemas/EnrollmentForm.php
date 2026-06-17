@@ -2,10 +2,13 @@
 
 namespace App\Filament\Resources\Enrollments\Schemas;
 
+use App\Filament\Resources\Enrollments\EnrollmentResource;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 
 class EnrollmentForm
@@ -58,8 +61,67 @@ class EnrollmentForm
                     ->disabled()
                     ->dehydrated(false)
                     ->columnSpanFull(),
+                ...self::paymentFields(),
                 Textarea::make('notes')
                     ->columnSpanFull(),
             ]);
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function paymentFields(): array
+    {
+        if (! EnrollmentResource::canManagePayments()) {
+            return [];
+        }
+
+        return [
+            Fieldset::make('Betaling')
+                ->schema([
+                    Toggle::make('requires_payment')
+                        ->label('Betaling vereist'),
+                    Select::make('payment_status')
+                        ->label('Betalingsstatus')
+                        ->options([
+                            'payment_pending' => 'Betaling wordt gestart',
+                            'open' => 'Open',
+                            'pending' => 'In behandeling',
+                            'paid' => 'Betaald',
+                            'failed' => 'Mislukt',
+                            'canceled' => 'Geannuleerd',
+                            'cancelled' => 'Geannuleerd',
+                            'expired' => 'Verlopen',
+                        ])
+                        ->searchable(),
+                    TextInput::make('payment_amount')
+                        ->label('Bedrag')
+                        ->placeholder('0.00')
+                        ->numeric()
+                        ->minValue(0)
+                        ->prefix('€'),
+                    TextInput::make('payment_currency')
+                        ->label('Valuta')
+                        ->maxLength(3)
+                        ->placeholder('EUR'),
+                    TextInput::make('mollie_payment_link_id')
+                        ->label('Mollie betaallink ID')
+                        ->maxLength(255),
+                    TextInput::make('mollie_payment_link_url')
+                        ->label('Mollie betaallink')
+                        ->url()
+                        ->columnSpanFull(),
+                    TextInput::make('mollie_payment_id')
+                        ->label('Mollie betaling ID')
+                        ->maxLength(255),
+                    DateTimePicker::make('paid_at')
+                        ->label('Betaald op'),
+                ])
+                ->columns([
+                    'default' => 1,
+                    'md' => 2,
+                ])
+                ->columnSpanFull(),
+        ];
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Resources\Enrollments\EnrollmentResource;
+use App\Filament\Resources\Enrollments\Pages\EditEnrollment;
 use App\Filament\Resources\Enrollments\Pages\ListEnrollments;
 use App\Filament\Resources\Enrollments\Tables\EnrollmentsTable;
 use App\Models\Enrollment;
@@ -9,6 +10,7 @@ use Filament\Actions\Testing\TestAction;
 use Filament\Tables\Columns\IconColumn;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 
 afterEach(function (): void {
     Carbon::setTestNow();
@@ -248,6 +250,72 @@ test('payment status column uses the requested status icons', function () {
     expect(paymentIconFor($column, $paid))->toBe('heroicon-o-check');
     expect(paymentIconFor($column, $failed))->toBe('heroicon-o-x-mark');
     expect(paymentIconFor($column, $waiting))->toBe('heroicon-o-exclamation-triangle');
+});
+
+test('only super admins or payment managers can edit enrollment payment details', function () {
+    $event = Event::create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addMonth(),
+    ]);
+
+    $enrollment = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Payment Person',
+        'email' => 'payment@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+        'requires_payment' => false,
+    ]);
+
+    $editor = panelUser([
+        'ViewAny:Enrollment',
+        'View:Enrollment',
+        'Update:Enrollment',
+    ]);
+
+    $this->actingAs($editor);
+
+    Livewire::test(EditEnrollment::class, ['record' => $enrollment->getRouteKey()])
+        ->assertFormFieldDoesNotExist('requires_payment')
+        ->assertFormFieldDoesNotExist('payment_status')
+        ->assertFormFieldDoesNotExist('payment_amount');
+
+    $superAdmin = panelUser([
+        'ViewAny:Enrollment',
+        'View:Enrollment',
+        'Update:Enrollment',
+    ]);
+
+    $superAdminRole = Role::firstOrCreate([
+        'name' => config('filament-shield.super_admin.name', 'super_admin'),
+        'guard_name' => config('auth.defaults.guard', 'web'),
+    ]);
+
+    $superAdmin->assignRole($superAdminRole);
+
+    $this->actingAs($superAdmin);
+
+    Livewire::test(EditEnrollment::class, ['record' => $enrollment->getRouteKey()])
+        ->assertFormFieldExists('requires_payment')
+        ->assertFormFieldExists('payment_status')
+        ->assertFormFieldExists('payment_amount')
+        ->fillForm([
+            'requires_payment' => true,
+            'payment_status' => 'paid',
+            'payment_amount' => 12.50,
+            'payment_currency' => 'EUR',
+            'mollie_payment_id' => 'tr_test',
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $enrollment->refresh();
+
+    expect($enrollment->requires_payment)->toBeTrue()
+        ->and($enrollment->payment_status)->toBe('paid')
+        ->and((float) $enrollment->payment_amount)->toBe(12.50)
+        ->and($enrollment->payment_currency)->toBe('EUR')
+        ->and($enrollment->mollie_payment_id)->toBe('tr_test');
 });
 
 test('enrollments table can filter by payment requirement and payment status', function () {
