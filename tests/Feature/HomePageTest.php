@@ -3,6 +3,7 @@
 use App\Models\Event;
 use App\Models\Partner;
 use App\Models\Vereniging;
+use App\Support\AppVersion;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -31,6 +32,7 @@ it('passes public logo urls to the home page', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
+            ->where('version', AppVersion::current())
             ->where('activeEvent.partners.0.logo', Storage::disk('public')->url('partners/acme.png'))
             ->where('activeEvent.verenigingen.0.logo', Storage::disk('public')->url('verenigingen/study.png'))
         );

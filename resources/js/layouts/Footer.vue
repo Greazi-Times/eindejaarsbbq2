@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import { PhGithubLogo, PhHamburger } from '@phosphor-icons/vue';
 
 defineProps<{
@@ -13,6 +14,8 @@ defineProps<{
         website: string | null;
     }[];
 }>();
+
+const page = usePage();
 </script>
 
 <template>
@@ -143,7 +146,12 @@ defineProps<{
                 class="mt-6 flex flex-col gap-4 text-white/60 md:flex-row md:items-center md:justify-between"
             >
                 <span>© 2026 Greazi. All rights reserved.</span>
-                <span>Een beter feest bestaat niet!</span>
+                <span class="flex flex-col gap-1 md:items-end">
+                    <span>Een beter feest bestaat niet!</span>
+                    <span v-if="page.props.version" class="text-xs">
+                        Versie {{ page.props.version }}
+                    </span>
+                </span>
             </div>
         </footer>
     </div>
