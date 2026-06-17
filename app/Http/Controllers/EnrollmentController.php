@@ -91,7 +91,7 @@ class EnrollmentController extends Controller
         }
 
         if (
-            ($validated['type'] ?? null) === 'student'
+            in_array($validated['type'] ?? null, ['student', 'docent'], true)
             && $organizationType === 'vereniging'
             && $organizationName
         ) {
@@ -113,7 +113,6 @@ class EnrollmentController extends Controller
         }
 
         if (($validated['type'] ?? null) === 'docent') {
-            $validated['student_association'] = null;
             $validated['custom_student_association'] = null;
             $validated['is_organization_member'] = null;
         }
@@ -508,6 +507,12 @@ class EnrollmentController extends Controller
             if ($organizationType && $organizationName) {
                 return [$organizationType, $organizationName];
             }
+
+            $verenigingName = $this->eventVerenigingForEducation($event, $validated)?->name;
+
+            if ($verenigingName) {
+                return ['vereniging', $verenigingName];
+            }
         }
 
         if (($validated['type'] ?? null) === 'partner-bedrijf') {
@@ -583,9 +588,13 @@ class EnrollmentController extends Controller
 
     private function currentOrganizationGuestAmount(Event $event, string $organizationType, string $organizationName): int
     {
+        $organizationEducation = $organizationType === 'vereniging'
+            ? $event->verenigingen->firstWhere('name', $organizationName)?->education
+            : null;
+
         return (int) Enrollment::query()
             ->where('event_id', $event->id)
-            ->where(function ($query) use ($organizationType, $organizationName): void {
+            ->where(function ($query) use ($organizationType, $organizationName, $organizationEducation): void {
                 if ($organizationType === 'partner') {
                     $query
                         ->where('partner_organization_type', 'partner')
@@ -598,7 +607,7 @@ class EnrollmentController extends Controller
                 $query
                     ->where(function ($query) use ($organizationName): void {
                         $query
-                            ->where('type', 'student')
+                            ->whereIn('type', ['student', 'docent'])
                             ->where('student_association', $organizationName);
                     })
                     ->orWhere(function ($query) use ($organizationName): void {
@@ -613,6 +622,23 @@ class EnrollmentController extends Controller
                             ->where('partner_organization_type', 'vereniging')
                             ->where('partner_organization_name', $organizationName);
                     });
+
+                if ($organizationEducation) {
+                    $query->orWhere(function ($query) use ($organizationName, $organizationEducation): void {
+                        $query
+                            ->whereIn('type', ['student', 'docent'])
+                            ->where('education', $organizationEducation)
+                            ->where(function ($query) use ($organizationName): void {
+                                $query
+                                    ->whereNull('partner_organization_name')
+                                    ->orWhere(function ($query) use ($organizationName): void {
+                                        $query
+                                            ->where('partner_organization_type', 'vereniging')
+                                            ->where('partner_organization_name', $organizationName);
+                                    });
+                            });
+                    });
+                }
             })
             ->sum('guest_amount');
     }
@@ -651,7 +677,7 @@ class EnrollmentController extends Controller
             }
 
             if (
-                ($validated['type'] ?? null) === 'student'
+                in_array($validated['type'] ?? null, ['student', 'docent'], true)
                 && $this->eventVerenigingForEducation($event, $validated)?->name === $name
             ) {
                 return true;

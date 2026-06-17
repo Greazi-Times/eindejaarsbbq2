@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\ResolvesDashboardEvent;
 use App\Models\Enrollment;
+use App\Models\Event;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -81,12 +82,13 @@ class OrganizationEnrollmentTotals extends TableWidget
                 'type',
                 'student_association',
                 'custom_student_association',
+                'education',
                 'partner_organization_type',
                 'partner_organization_name',
                 'guest_amount',
             ])
             ->map(fn (Enrollment $enrollment): array => [
-                ...$this->getOrganizationForEnrollment($enrollment),
+                ...$this->getOrganizationForEnrollment($event, $enrollment),
                 'people_count' => (int) $enrollment->guest_amount,
                 'enrollment_count' => 1,
             ])
@@ -121,7 +123,7 @@ class OrganizationEnrollmentTotals extends TableWidget
     /**
      * @return array{organization_name: string, organization_type: string}
      */
-    private function getOrganizationForEnrollment(Enrollment $enrollment): array
+    private function getOrganizationForEnrollment(Event $event, Enrollment $enrollment): array
     {
         $partnerOrganizationName = $this->cleanOrganizationName($enrollment->partner_organization_name);
 
@@ -136,10 +138,14 @@ class OrganizationEnrollmentTotals extends TableWidget
             ];
         }
 
-        if ($enrollment->type === 'student') {
+        if (in_array($enrollment->type, ['student', 'docent'], true)) {
             $studentAssociation = $enrollment->student_association === 'anders'
                 ? $enrollment->custom_student_association
                 : $enrollment->student_association;
+
+            $studentAssociation ??= $event->verenigingen
+                ->firstWhere('education', $enrollment->education)
+                ?->name;
 
             if ($studentAssociation = $this->cleanOrganizationName($studentAssociation)) {
                 return [

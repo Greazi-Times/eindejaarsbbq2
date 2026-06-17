@@ -2,6 +2,7 @@
 
 use App\Models\Enrollment;
 use App\Models\Event;
+use App\Models\Vereniging;
 use Illuminate\Support\Carbon;
 
 afterEach(function (): void {
@@ -123,4 +124,39 @@ test('dashboard falls back to the last event when no future event is planned', f
         ->assertSee('Laatste BBQ')
         ->assertSee('Laatste Vereniging')
         ->assertDontSee('Oudste Vereniging');
+});
+
+test('dashboard groups docents by the vereniging linked to their education', function () {
+    Carbon::setTestNow('2026-06-15 12:00:00');
+
+    $user = dashboardUser();
+
+    $event = Event::create([
+        'name' => 'Aankomende BBQ',
+        'starts_at' => now()->addMonth(),
+        'location' => 'Nieuwe locatie',
+    ]);
+
+    $vereniging = Vereniging::create([
+        'name' => 'SV-Motus',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging);
+
+    Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Docent Mechatronica',
+        'email' => 'docent@example.com',
+        'type' => 'docent',
+        'education' => 'mechatronica',
+        'guest_amount' => 1,
+    ]);
+
+    $response = $this->actingAs($user)->get(route('filament.dashboard.pages.dashboard'));
+
+    $response
+        ->assertOk()
+        ->assertSee('SV-Motus')
+        ->assertDontSee('Geen vereniging/partner');
 });

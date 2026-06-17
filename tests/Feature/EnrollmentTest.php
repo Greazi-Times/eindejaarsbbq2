@@ -220,7 +220,7 @@ it('charges students with the selected partner price', function () {
         ->and($enrollment->partner_organization_name)->toBe($partner->name);
 });
 
-it('charges docents from the education price without linking them to a vereniging', function () {
+it('charges docents from the education price and links them to the education vereniging', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
         'starts_at' => now()->addWeek(),
@@ -261,9 +261,9 @@ it('charges docents from the education price without linking them to a verenigin
         ->and((float) $enrollment->payment_amount)->toBe(4.25)
         ->and($enrollment->payment_currency)->toBe('EUR')
         ->and($enrollment->payment_status)->toBe('open')
-        ->and($enrollment->student_association)->toBeNull()
-        ->and($enrollment->partner_organization_type)->toBeNull()
-        ->and($enrollment->partner_organization_name)->toBeNull()
+        ->and($enrollment->student_association)->toBe($vereniging->name)
+        ->and($enrollment->partner_organization_type)->toBe('vereniging')
+        ->and($enrollment->partner_organization_name)->toBe($vereniging->name)
         ->and($enrollment->is_organization_member)->toBeNull();
 });
 
@@ -740,6 +740,60 @@ it('charges student enrollments with the vereniging total price after the free l
         ->and($enrollment->student_association)->toBe($vereniging->name)
         ->and($enrollment->guest_amount)->toBe(1)
         ->and($enrollment->mollie_payment_id)->toBe("tr_{$enrollment->id}");
+});
+
+it('counts existing education docents for the vereniging free limit', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Motus',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging, [
+        'free_guest_limit' => 1,
+        'over_limit_payment_amount' => 32.00,
+    ]);
+
+    Enrollment::query()->create([
+        'event_id' => $event->id,
+        'full_name' => 'Existing Docent',
+        'email' => 'existing-docent@example.com',
+        'type' => 'docent',
+        'education' => 'mechatronica',
+        'guest_amount' => 1,
+        'requires_payment' => false,
+    ]);
+
+    $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Over Limit Docent',
+            'email' => 'over-limit-docent@example.com',
+            'type' => 'docent',
+            'education' => 'mechatronica',
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'over-limit-docent@example.com')
+        ->firstOrFail();
+
+    $response->assertRedirect("https://payments.test/enrollments/{$enrollment->id}");
+
+    expect($enrollment->requires_payment)->toBeTrue()
+        ->and((float) $enrollment->payment_amount)->toBe(32.00)
+        ->and($enrollment->student_association)->toBe($vereniging->name)
+        ->and($enrollment->partner_organization_type)->toBe('vereniging')
+        ->and($enrollment->partner_organization_name)->toBe($vereniging->name);
 });
 
 it('keeps organization members free after the free limit when members do not have to pay', function () {
