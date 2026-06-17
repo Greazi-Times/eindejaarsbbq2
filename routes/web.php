@@ -49,6 +49,19 @@ Route::get('/', function () {
                 'name' => $partner->name,
                 'logo' => $logoUrl($partner->logo),
                 'website' => $partner->website,
+                'show_for_students_docents' => (bool) ($partner->pivot?->show_for_students_docents ?? false),
+                'show_for_partner_companies' => (bool) ($partner->pivot?->show_for_partner_companies ?? true),
+                'current_guest_amount' => (int) $activeEvent->enrollments
+                    ->filter(fn ($enrollment): bool => (
+                        in_array($enrollment->type, ['student', 'docent', 'partner-bedrijf'], true)
+                        && $enrollment->partner_organization_type === 'partner'
+                        && $enrollment->partner_organization_name === $partner->name
+                    ))
+                    ->sum('guest_amount'),
+                'free_guest_limit' => $partner->pivot?->free_guest_limit,
+                'over_limit_payment_amount' => $partner->pivot?->over_limit_payment_amount,
+                'student_payment_amount' => $partner->pivot?->student_payment_amount,
+                'docent_payment_amount' => $partner->pivot?->docent_payment_amount,
             ])->values(),
 
             'verenigingen' => $activeEvent->verenigingen->map(fn ($vereniging) => [
@@ -57,6 +70,8 @@ Route::get('/', function () {
                 'education' => $vereniging->education,
                 'logo' => $logoUrl($vereniging->logo),
                 'website' => $vereniging->website,
+                'show_for_students_docents' => (bool) ($vereniging->pivot?->show_for_students_docents ?? false),
+                'show_for_partner_companies' => (bool) ($vereniging->pivot?->show_for_partner_companies ?? true),
                 'current_guest_amount' => (int) $activeEvent->enrollments
                     ->filter(fn ($enrollment): bool => (
                         $enrollment->type === 'student'

@@ -57,6 +57,12 @@ class VerenigingenRelationManager extends RelationManager
                 IconColumn::make('pivot.members_must_pay')
                     ->label('Leden betalen')
                     ->boolean(),
+                IconColumn::make('pivot.show_for_students_docents')
+                    ->label('Student/docent formulier')
+                    ->boolean(),
+                IconColumn::make('pivot.show_for_partner_companies')
+                    ->label('Partnerformulier')
+                    ->boolean(),
             ])
             ->headerActions([
                 CreateAction::make(),
@@ -121,6 +127,16 @@ class VerenigingenRelationManager extends RelationManager
                         ->label('Leden betalen')
                         ->helperText('Uit: leden zijn gratis. Aan: leden betalen de studenten- of docentenprijs, of anders het bedrag bij Extra personen.')
                         ->default(false),
+                ]),
+            Fieldset::make('Zichtbaarheid formulier')
+                ->schema([
+                    Toggle::make('show_for_students_docents')
+                        ->label('Toon bij studenten/docenten')
+                        ->helperText('Gebruik dit vooral voor verenigingen zonder gekoppelde opleiding die los gekozen moeten kunnen worden.')
+                        ->default(false),
+                    Toggle::make('show_for_partner_companies')
+                        ->label('Toon bij partners/bedrijven')
+                        ->default(true),
                 ]),
         ];
     }

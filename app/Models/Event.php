@@ -34,6 +34,8 @@ class Event extends Model
                 'docent_payment_amount',
                 'docents_always_pay',
                 'members_must_pay',
+                'show_for_students_docents',
+                'show_for_partner_companies',
             ]);
     }
 
@@ -53,6 +55,8 @@ class Event extends Model
                 'docent_payment_amount',
                 'docents_always_pay',
                 'members_must_pay',
+                'show_for_students_docents',
+                'show_for_partner_companies',
             ])
             ->withTimestamps();
     }

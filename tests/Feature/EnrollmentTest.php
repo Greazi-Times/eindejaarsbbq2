@@ -70,7 +70,6 @@ it('stores a partner enrollment for a selected partner organization', function (
             'full_name' => 'Partner Tester',
             'email' => 'partner@example.com',
             'type' => 'partner-bedrijf',
-            'education' => 'mechatronica',
             'partner_organization_type' => 'partner',
             'partner_organization_name' => $partner->name,
             'is_organization_member' => false,
@@ -87,6 +86,9 @@ it('stores a partner enrollment for a selected partner organization', function (
 
     expect($enrollment->partner_organization_type)->toBe('partner')
         ->and($enrollment->partner_organization_name)->toBe($partner->name)
+        ->and($enrollment->education)->toBeNull()
+        ->and($enrollment->custom_education)->toBeNull()
+        ->and($enrollment->is_organization_member)->toBeNull()
         ->and($enrollment->company_name)->toBe('External Company')
         ->and($enrollment->guest_amount)->toBe(2)
         ->and($enrollment->requires_payment)->toBeFalse();
@@ -149,6 +151,7 @@ it('charges students with the selected partner price', function () {
 
     $event->partners()->attach($partner, [
         'student_payment_amount' => 6.50,
+        'show_for_students_docents' => true,
     ]);
 
     $this->instance(MolliePaymentService::class, fakeEnrollmentMollieService());
@@ -208,8 +211,6 @@ it('charges docents from the education price without linking them to a verenigin
             'email' => 'education-docent@example.com',
             'type' => 'docent',
             'education' => 'mechatronica',
-            'partner_organization_type' => 'vereniging',
-            'partner_organization_name' => $vereniging->name,
             'is_organization_member' => true,
             'guest_amount' => 1,
             'dietary_preferences' => [],
@@ -228,6 +229,93 @@ it('charges docents from the education price without linking them to a verenigin
         ->and($enrollment->student_association)->toBeNull()
         ->and($enrollment->partner_organization_type)->toBeNull()
         ->and($enrollment->partner_organization_name)->toBeNull()
+        ->and($enrollment->is_organization_member)->toBeNull();
+});
+
+it('stores a selected visible organization for docents', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $partner = Partner::query()->create([
+        'name' => 'Visible Partner',
+        'show_on_registration_form' => true,
+    ]);
+
+    $event->partners()->attach($partner, [
+        'show_for_students_docents' => true,
+    ]);
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Partner Docent',
+            'email' => 'partner-docent@example.com',
+            'type' => 'docent',
+            'education' => 'mechatronica',
+            'partner_organization_type' => 'partner',
+            'partner_organization_name' => $partner->name,
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $response
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('banner.type', 'success');
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'partner-docent@example.com')
+        ->firstOrFail();
+
+    expect($enrollment->partner_organization_type)->toBe('partner')
+        ->and($enrollment->partner_organization_name)->toBe($partner->name)
+        ->and($enrollment->is_organization_member)->toBeNull()
+        ->and($enrollment->requires_payment)->toBeFalse();
+});
+
+it('stores a selected loose vereniging for students without membership', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Loose Association',
+    ]);
+
+    $event->verenigingen()->attach($vereniging, [
+        'show_for_students_docents' => true,
+    ]);
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Loose Student',
+            'email' => 'loose-student@example.com',
+            'type' => 'student',
+            'education' => 'mechatronica',
+            'partner_organization_type' => 'vereniging',
+            'partner_organization_name' => $vereniging->name,
+            'guest_amount' => 1,
+            'dietary_preferences' => [],
+        ]);
+
+    $response
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('banner.type', 'success');
+
+    $enrollment = Enrollment::query()
+        ->where('email', 'loose-student@example.com')
+        ->firstOrFail();
+
+    expect($enrollment->student_association)->toBe($vereniging->name)
+        ->and($enrollment->partner_organization_type)->toBe('vereniging')
+        ->and($enrollment->partner_organization_name)->toBe($vereniging->name)
         ->and($enrollment->is_organization_member)->toBeNull();
 });
 

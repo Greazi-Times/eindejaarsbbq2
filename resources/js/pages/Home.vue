@@ -43,12 +43,28 @@ type EventVereniging = {
     education: string | null;
     logo: string | null;
     website: string | null;
+    show_for_students_docents: boolean;
+    show_for_partner_companies: boolean;
     current_guest_amount: number;
     free_guest_limit: number | null;
     over_limit_payment_amount: string | number | null;
     student_payment_amount: string | number | null;
     docent_payment_amount: string | number | null;
     members_must_pay: boolean;
+};
+
+type EventPartner = {
+    id: number;
+    name: string;
+    logo: string | null;
+    website: string | null;
+    show_for_students_docents: boolean;
+    show_for_partner_companies: boolean;
+    current_guest_amount: number;
+    free_guest_limit: number | null;
+    over_limit_payment_amount: string | number | null;
+    student_payment_amount: string | number | null;
+    docent_payment_amount: string | number | null;
 };
 
 const showCalendarModal = ref(false);
@@ -63,6 +79,7 @@ const email = ref('');
 const selectedTypes = ref<string[]>([]);
 
 const selectedEducation = ref<string[]>([]);
+const selectedRegistrationOrganization = ref<string[]>([]);
 const selectedOrganizationMembership = ref<string[]>([]);
 
 const customEducation = ref('');
@@ -87,12 +104,7 @@ const props = withDefaults(
             location: string | null;
             description: string | null;
             default_payment_amount: string | number | null;
-            partners: {
-                id: number;
-                name: string;
-                logo: string | null;
-                website: string | null;
-            }[];
+            partners: EventPartner[];
             verenigingen: EventVereniging[];
         } | null;
         educationOptions: BasicOption[];
@@ -291,6 +303,34 @@ const membershipOptions = [
     },
 ];
 
+const registrationOrganizationOptions = computed(() => [
+    ...eventPartners.value
+        .filter((partner) =>
+            selectedTypes.value.includes('partner-bedrijf')
+                ? partner.show_for_partner_companies
+                : partner.show_for_students_docents,
+        )
+        .map((partner) => ({
+            label: partner.name,
+            value: `partner:${partner.name}`,
+            description: 'Partner',
+        })),
+    ...eventVerenigingen.value
+        .filter(
+            (vereniging) =>
+                (selectedTypes.value.includes('partner-bedrijf')
+                    ? vereniging.show_for_partner_companies
+                    : vereniging.show_for_students_docents) &&
+                (selectedTypes.value.includes('partner-bedrijf') ||
+                    !vereniging.education),
+        )
+        .map((vereniging) => ({
+            label: vereniging.name,
+            value: `vereniging:${vereniging.name}`,
+            description: 'Vereniging',
+        })),
+]);
+
 const getImageUrl = (logo: string | null) => {
     if (!logo) {
         return null;
@@ -403,11 +443,15 @@ const validateStep = () => {
     }
 
     if (currentStep.value === 2) {
-        if (!selectedEducation.value.length) {
+        if (shouldAskEducation.value && !selectedEducation.value.length) {
             stepErrors.value.education = 'Selecteer een opleiding.';
         }
 
-        if (hasCustomEducation.value && !customEducation.value.trim()) {
+        if (
+            shouldAskEducation.value &&
+            hasCustomEducation.value &&
+            !customEducation.value.trim()
+        ) {
             stepErrors.value.customEducation = 'Vul je opleiding in.';
         }
 
@@ -417,6 +461,14 @@ const validateStep = () => {
         ) {
             stepErrors.value.organizationMembership =
                 'Selecteer of je lid bent van deze vereniging.';
+        }
+
+        if (
+            selectedTypes.value.includes('partner-bedrijf') &&
+            !selectedRegistrationOrganization.value.length
+        ) {
+            stepErrors.value.partnerOrganization =
+                'Selecteer een partner of vereniging.';
         }
     }
 
@@ -477,6 +529,45 @@ const educationVereniging = computed(() => {
     );
 });
 
+const selectedRegistrationOrganizationOption = computed(() => {
+    const value = selectedRegistrationOrganization.value[0];
+
+    if (!value) {
+        return null;
+    }
+
+    const [type, ...nameParts] = value.split(':');
+    const name = nameParts.join(':');
+
+    if (!['partner', 'vereniging'].includes(type) || !name) {
+        return null;
+    }
+
+    return { type, name };
+});
+
+const selectedRegistrationOrganizationModel = computed(() => {
+    const organization = selectedRegistrationOrganizationOption.value;
+
+    if (!organization) {
+        return null;
+    }
+
+    if (organization.type === 'partner') {
+        return (
+            eventPartners.value.find(
+                (partner) => partner.name === organization.name,
+            ) || null
+        );
+    }
+
+    return (
+        eventVerenigingen.value.find(
+            (vereniging) => vereniging.name === organization.name,
+        ) || null
+    );
+});
+
 const selectedEducationVereniging = computed(() => {
     if (!selectedTypes.value.includes('student')) {
         return null;
@@ -485,12 +576,54 @@ const selectedEducationVereniging = computed(() => {
     return educationVereniging.value;
 });
 
+const selectedMembershipVereniging = computed(() => {
+    if (!selectedTypes.value.includes('student')) {
+        return null;
+    }
+
+    if (selectedRegistrationOrganizationOption.value) {
+        return null;
+    }
+
+    return selectedEducationVereniging.value;
+});
+
+const selectedPaymentOrganization = computed(() => {
+    if (selectedRegistrationOrganizationModel.value) {
+        return selectedRegistrationOrganizationModel.value;
+    }
+
+    if (selectedTypes.value.includes('student')) {
+        return selectedEducationVereniging.value;
+    }
+
+    if (selectedTypes.value.includes('docent')) {
+        return educationVereniging.value;
+    }
+
+    return null;
+});
+
 const shouldAskOrganizationMembership = computed(() => {
-    return Boolean(selectedEducationVereniging.value);
+    return Boolean(selectedMembershipVereniging.value);
 });
 
 const canSelectGuestAmount = computed(() => {
     return selectedTypes.value.includes('partner-bedrijf');
+});
+
+const shouldAskEducation = computed(() => {
+    return selectedTypes.value.some((type) =>
+        ['student', 'docent'].includes(type),
+    );
+});
+
+const canSelectRegistrationOrganization = computed(() => {
+    return (
+        selectedTypes.value.some((type) =>
+            ['student', 'docent', 'partner-bedrijf'].includes(type),
+        ) && registrationOrganizationOptions.value.length > 0
+    );
 });
 
 const isOrganizationMember = computed(() => {
@@ -558,14 +691,25 @@ watch(selectedTypes, (types) => {
         guestAmount.value = '1';
     }
 
+    if (!types.some((type) => ['student', 'docent'].includes(type))) {
+        selectedEducation.value = [];
+        customEducation.value = '';
+        selectedRegistrationOrganization.value = [];
+    }
+
     if (!types.includes('student')) {
         selectedOrganizationMembership.value = [];
     }
 });
 
+watch(selectedRegistrationOrganization, () => {
+    selectedOrganizationMembership.value = [];
+});
+
 watch(
     () => selectedEducationValue.value,
     () => {
+        selectedRegistrationOrganization.value = [];
         selectedOrganizationMembership.value = [];
 
         if (!hasCustomEducation.value) {
@@ -595,34 +739,38 @@ const formatEuro = (amount: number) => {
 
 const rolePaymentAmount = computed(() => {
     const role = selectedTypes.value[0];
-    const vereniging =
-        role === 'docent'
-            ? educationVereniging.value
-            : selectedEducationVereniging.value;
+    const organization = selectedPaymentOrganization.value;
 
-    if (!vereniging || !['student', 'docent'].includes(role)) {
+    if (!organization || !['student', 'docent'].includes(role)) {
         return null;
     }
 
     const configuredRoleAmount = amountAsNumber(
         role === 'student'
-            ? vereniging.student_payment_amount
-            : vereniging.docent_payment_amount,
+            ? organization.student_payment_amount
+            : organization.docent_payment_amount,
     );
 
     const mustPay =
         role === 'student' && isOrganizationMember.value
-            ? vereniging.members_must_pay
+            ? Boolean(
+                  'members_must_pay' in organization &&
+                  organization.members_must_pay,
+              )
             : configuredRoleAmount !== null;
 
     if (!mustPay) {
         return null;
     }
 
-    if (isOrganizationMember.value && vereniging.members_must_pay) {
+    if (
+        isOrganizationMember.value &&
+        'members_must_pay' in organization &&
+        organization.members_must_pay
+    ) {
         return (
             configuredRoleAmount ??
-            amountAsNumber(vereniging.over_limit_payment_amount)
+            amountAsNumber(organization.over_limit_payment_amount)
         );
     }
 
@@ -630,11 +778,11 @@ const rolePaymentAmount = computed(() => {
 });
 
 const extraPersonsPaymentAmount = computed(() => {
-    const vereniging = selectedEducationVereniging.value;
+    const organization = selectedPaymentOrganization.value;
     const role = selectedTypes.value[0];
 
     if (
-        !vereniging ||
+        !organization ||
         !['student', 'docent', 'partner-bedrijf'].includes(role)
     ) {
         return null;
@@ -642,8 +790,10 @@ const extraPersonsPaymentAmount = computed(() => {
 
     if (
         rolePaymentAmount.value !== null ||
-        (isOrganizationMember.value && !vereniging.members_must_pay) ||
-        vereniging.free_guest_limit === null
+        (isOrganizationMember.value &&
+            'members_must_pay' in organization &&
+            !organization.members_must_pay) ||
+        organization.free_guest_limit === null
     ) {
         return null;
     }
@@ -653,9 +803,9 @@ const extraPersonsPaymentAmount = computed(() => {
         amount,
         Math.max(
             0,
-            vereniging.current_guest_amount +
+            organization.current_guest_amount +
                 amount -
-                vereniging.free_guest_limit,
+                organization.free_guest_limit,
         ),
     );
 
@@ -663,11 +813,15 @@ const extraPersonsPaymentAmount = computed(() => {
         return null;
     }
 
-    return amountAsNumber(vereniging.over_limit_payment_amount);
+    return amountAsNumber(organization.over_limit_payment_amount);
 });
 
 const defaultPaymentAmount = computed(() => {
-    if (!selectedEducationValue.value) {
+    if (!shouldAskEducation.value || !selectedEducationValue.value) {
+        return null;
+    }
+
+    if (selectedRegistrationOrganizationOption.value) {
         return null;
     }
 
@@ -687,7 +841,10 @@ const paymentPreview = computed(() => {
         extraPersonsPaymentAmount.value ??
         defaultPaymentAmount.value;
 
-    if (!selectedEducationValue.value || !selectedTypes.value.length) {
+    if (
+        (shouldAskEducation.value && !selectedEducationValue.value) ||
+        !selectedTypes.value.length
+    ) {
         return {
             label: 'Nog niet bekend',
             title: 'Betaling',
@@ -764,7 +921,11 @@ const reviewDetails = computed(() => {
         },
         {
             label: 'Vereniging',
-            value: selectedEducationVereniging.value?.name || '',
+            value: selectedMembershipVereniging.value?.name || '',
+        },
+        {
+            label: 'Partner / vereniging',
+            value: selectedRegistrationOrganizationOption.value?.name || '',
         },
         {
             label: 'Lid van vereniging',
@@ -804,6 +965,7 @@ const resetEnrollmentForm = () => {
     email.value = '';
     selectedTypes.value = [];
     selectedEducation.value = [];
+    selectedRegistrationOrganization.value = [];
     selectedOrganizationMembership.value = [];
     customEducation.value = '';
     guestAmount.value = '1';
@@ -826,20 +988,24 @@ const submitEnrollment = () => {
             email: email.value,
             type: selectedTypes.value[0],
             student_association: selectedTypes.value.includes('student')
-                ? selectedEducationVereniging.value?.name || null
+                ? selectedMembershipVereniging.value?.name || null
                 : null,
             custom_student_association: null,
-            education: selectedEducation.value[0] || null,
+            education: shouldAskEducation.value
+                ? selectedEducation.value[0] || null
+                : null,
             custom_education:
+                shouldAskEducation.value &&
                 selectedEducationValue.value === 'anders'
                     ? customEducation.value
                     : null,
-            partner_organization_type: selectedEducationVereniging.value
-                ? 'vereniging'
-                : null,
+            partner_organization_type:
+                selectedRegistrationOrganizationOption.value?.type || null,
             partner_organization_name:
-                selectedEducationVereniging.value?.name || null,
-            is_organization_member: isOrganizationMember.value,
+                selectedRegistrationOrganizationOption.value?.name || null,
+            is_organization_member: shouldAskOrganizationMembership.value
+                ? isOrganizationMember.value
+                : null,
             company_name: null,
             guest_amount: Number(guestAmount.value),
             dietary_preferences: guestDietaryPreferences.value,
@@ -1240,6 +1406,7 @@ const addToGoogleCalendar = () => {
 
                         <FormSection v-if="currentStep === 2">
                             <CheckboxGroup
+                                v-if="shouldAskEducation"
                                 v-model="selectedEducation"
                                 label="Opleiding"
                                 description="Selecteer je opleiding."
@@ -1250,7 +1417,7 @@ const addToGoogleCalendar = () => {
                             />
 
                             <Input
-                                v-if="hasCustomEducation"
+                                v-if="shouldAskEducation && hasCustomEducation"
                                 v-model="customEducation"
                                 name="customEducation"
                                 label="Andere opleiding"
@@ -1260,6 +1427,15 @@ const addToGoogleCalendar = () => {
                                     stepErrors.custom_education
                                 "
                                 required
+                            />
+
+                            <CheckboxGroup
+                                v-if="canSelectRegistrationOrganization"
+                                v-model="selectedRegistrationOrganization"
+                                label="Partner / vereniging"
+                                description="Selecteer dit alleen als je aanmelding bij een zichtbare partner of losse vereniging hoort."
+                                :max="1"
+                                :options="registrationOrganizationOptions"
                             />
 
                             <CheckboxGroup
@@ -1280,7 +1456,7 @@ const addToGoogleCalendar = () => {
                                 v-if="shouldAskOrganizationMembership"
                                 v-model="selectedOrganizationMembership"
                                 label="Lidmaatschap"
-                                :description="`Ben je lid van de studievereniging ${selectedEducationVereniging?.name}?`"
+                                :description="`Ben je lid van de studievereniging ${selectedMembershipVereniging?.name}?`"
                                 :error="
                                     stepErrors.organizationMembership ||
                                     stepErrors.is_organization_member

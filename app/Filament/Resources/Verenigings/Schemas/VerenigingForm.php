@@ -7,6 +7,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class VerenigingForm
@@ -23,6 +24,10 @@ class VerenigingForm
                     ->options(EducationOptions::options())
                     ->searchable()
                     ->preload(),
+                Toggle::make('show_on_registration_form')
+                    ->label('Toon los in aanmeldformulier')
+                    ->helperText('Gebruik dit voor verenigingen zonder gekoppelde opleiding die studenten en docenten apart moeten kunnen kiezen.')
+                    ->default(false),
                 FileUpload::make('logo')
                     ->image()
                     ->disk('public')

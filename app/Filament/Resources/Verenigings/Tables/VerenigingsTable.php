@@ -7,6 +7,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -29,6 +30,10 @@ class VerenigingsTable
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
+                IconColumn::make('show_on_registration_form')
+                    ->label('Los in formulier')
+                    ->boolean()
+                    ->sortable(),
                 TextColumn::make('website')
                     ->searchable()
                     ->toggleable(),

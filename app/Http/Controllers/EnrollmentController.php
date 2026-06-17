@@ -41,7 +41,7 @@ class EnrollmentController extends Controller
                 'student_association' => ['nullable', 'string', 'max:255'],
                 'custom_student_association' => ['nullable', 'string', 'max:255'],
 
-                'education' => ['required', 'string', 'max:255'],
+                'education' => ['required_unless:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
                 'custom_education' => ['required_if:education,'.EducationOptions::OTHER, 'nullable', 'string', 'max:255'],
 
                 'partner_organization_type' => ['nullable', 'string', 'in:partner,vereniging'],
@@ -59,7 +59,7 @@ class EnrollmentController extends Controller
                 'email.email' => 'Vul een geldig e-mailadres in.',
                 'type.required' => 'Selecteer een type.',
                 'type.in' => 'Selecteer een geldig type.',
-                'education.required' => 'Selecteer een opleiding.',
+                'education.required_unless' => 'Selecteer een opleiding.',
                 'custom_education.required_if' => 'Vul je opleiding in.',
                 'partner_organization_type.in' => 'Selecteer een geldig organisatietype.',
                 'is_organization_member.boolean' => 'Selecteer een geldige ledenstatus.',
@@ -70,20 +70,29 @@ class EnrollmentController extends Controller
             ],
         );
 
-        if (
-            ($validated['type'] ?? null) === 'student'
-            && $this->eventVerenigingForEducation($event, $validated)
-            && ! $request->has('is_organization_member')
-        ) {
+        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($event, $validated);
+
+        if ($this->shouldAskOrganizationMembership($event, $validated, $organizationType) && ! $request->has('is_organization_member')) {
             throw ValidationException::withMessages([
                 'is_organization_member' => 'Selecteer of je lid bent van deze vereniging.',
             ]);
         }
 
-        [$organizationType, $organizationName] = $this->paymentOrganizationForEnrollment($event, $validated);
-
-        if (($validated['type'] ?? null) === 'student' && $organizationType === 'vereniging' && $organizationName) {
+        if (
+            ($validated['type'] ?? null) === 'student'
+            && $organizationType === 'vereniging'
+            && $organizationName
+        ) {
             $validated['student_association'] = $organizationName;
+        }
+
+        if (
+            ($validated['type'] ?? null) === 'student'
+            && filled($validated['partner_organization_type'] ?? null)
+            && filled($validated['partner_organization_name'] ?? null)
+            && ! $this->isEducationVerenigingOrganization($event, $validated)
+        ) {
+            $validated['is_organization_member'] = null;
         }
 
         if ($organizationType && $organizationName) {
@@ -94,8 +103,14 @@ class EnrollmentController extends Controller
         if (($validated['type'] ?? null) === 'docent') {
             $validated['student_association'] = null;
             $validated['custom_student_association'] = null;
-            $validated['partner_organization_type'] = null;
-            $validated['partner_organization_name'] = null;
+            $validated['is_organization_member'] = null;
+        }
+
+        if (($validated['type'] ?? null) === 'partner-bedrijf') {
+            $validated['education'] = null;
+            $validated['custom_education'] = null;
+            $validated['student_association'] = null;
+            $validated['custom_student_association'] = null;
             $validated['is_organization_member'] = null;
         }
 
@@ -267,9 +282,11 @@ class EnrollmentController extends Controller
             return null;
         }
 
-        $organization = $role === 'docent'
-            ? $this->eventVerenigingForEducation($event, $validated)
-            : $this->eventOrganizationForPayment($event, $validated);
+        $organization = $this->eventOrganizationForPayment($event, $validated);
+
+        if (! $organization && $role === 'docent') {
+            $organization = $this->eventVerenigingForEducation($event, $validated);
+        }
 
         if (! $organization) {
             return null;
@@ -417,6 +434,15 @@ class EnrollmentController extends Controller
             return ['vereniging', $verenigingName];
         }
 
+        if (($validated['type'] ?? null) === 'docent') {
+            $organizationType = $validated['partner_organization_type'] ?? null;
+            $organizationName = $validated['partner_organization_name'] ?? null;
+
+            if ($organizationType && $organizationName) {
+                return [$organizationType, $organizationName];
+            }
+        }
+
         if (($validated['type'] ?? null) === 'partner-bedrijf') {
             $organizationType = $validated['partner_organization_type'] ?? null;
             $organizationName = $validated['partner_organization_name'] ?? null;
@@ -427,6 +453,30 @@ class EnrollmentController extends Controller
         }
 
         return [null, null];
+    }
+
+    private function shouldAskOrganizationMembership(Event $event, array $validated, ?string $organizationType): bool
+    {
+        if (($validated['type'] ?? null) !== 'student') {
+            return false;
+        }
+
+        if ($this->isEducationVerenigingOrganization($event, $validated)) {
+            return true;
+        }
+
+        if (filled($validated['partner_organization_type'] ?? null) && filled($validated['partner_organization_name'] ?? null)) {
+            return false;
+        }
+
+        return $this->eventVerenigingForEducation($event, $validated) !== null;
+    }
+
+    private function isEducationVerenigingOrganization(Event $event, array $validated): bool
+    {
+        return ($validated['partner_organization_type'] ?? null) === 'vereniging'
+            && filled($validated['partner_organization_name'] ?? null)
+            && $this->eventVerenigingForEducation($event, $validated)?->name === ($validated['partner_organization_name'] ?? null);
     }
 
     private function eventVerenigingForEducation(Event $event, array $validated): ?Vereniging
@@ -517,11 +567,43 @@ class EnrollmentController extends Controller
         }
 
         if ($type === 'partner') {
-            return $event->partners->contains('name', $name);
+            $partner = $event->partners->firstWhere('name', $name);
+
+            if (! $partner) {
+                return false;
+            }
+
+            return $this->organizationIsVisibleForEnrollment($partner, $validated);
         }
 
         if ($type === 'vereniging') {
-            return $event->verenigingen->contains('name', $name);
+            $vereniging = $event->verenigingen->firstWhere('name', $name);
+
+            if (! $vereniging) {
+                return false;
+            }
+
+            if (
+                ($validated['type'] ?? null) === 'student'
+                && $this->eventVerenigingForEducation($event, $validated)?->name === $name
+            ) {
+                return true;
+            }
+
+            return $this->organizationIsVisibleForEnrollment($vereniging, $validated);
+        }
+
+        return false;
+    }
+
+    private function organizationIsVisibleForEnrollment(Partner|Vereniging $organization, array $validated): bool
+    {
+        if (($validated['type'] ?? null) === 'partner-bedrijf') {
+            return (bool) ($organization->pivot?->show_for_partner_companies ?? true);
+        }
+
+        if (in_array($validated['type'] ?? null, ['student', 'docent'], true)) {
+            return (bool) ($organization->pivot?->show_for_students_docents ?? false);
         }
 
         return false;

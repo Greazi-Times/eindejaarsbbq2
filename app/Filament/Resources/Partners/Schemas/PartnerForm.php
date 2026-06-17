@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Partners\Schemas;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class PartnerForm
@@ -23,6 +24,10 @@ class PartnerForm
                     ->imageEditor(),
                 TextInput::make('website')
                     ->url(),
+                Toggle::make('show_on_registration_form')
+                    ->label('Toon in aanmeldformulier')
+                    ->helperText('Alleen partners met deze optie aan zijn zichtbaar voor studenten en docenten.')
+                    ->default(false),
                 Textarea::make('description')
                     ->columnSpanFull(),
             ]);

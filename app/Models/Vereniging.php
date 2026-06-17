@@ -15,6 +15,11 @@ class Vereniging extends Model
         'logo',
         'website',
         'description',
+        'show_on_registration_form',
+    ];
+
+    protected $casts = [
+        'show_on_registration_form' => 'boolean',
     ];
 
     public function events(): BelongsToMany
@@ -33,6 +38,8 @@ class Vereniging extends Model
                 'docent_payment_amount',
                 'docents_always_pay',
                 'members_must_pay',
+                'show_for_students_docents',
+                'show_for_partner_companies',
             ])
             ->withTimestamps();
     }

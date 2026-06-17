@@ -133,6 +133,16 @@ class EventForm
                                 ->default(false),
                         ])
                         ->columnSpanFull(),
+                    Fieldset::make('Zichtbaarheid formulier')
+                        ->schema([
+                            Toggle::make('show_for_students_docents')
+                                ->label('Toon bij studenten/docenten')
+                                ->default(false),
+                            Toggle::make('show_for_partner_companies')
+                                ->label('Toon bij partners/bedrijven')
+                                ->default(true),
+                        ])
+                        ->columnSpanFull(),
                 ])
                 ->columnSpanFull(),
         ];

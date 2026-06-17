@@ -23,6 +23,8 @@ class EventPartner extends Pivot
         'docent_payment_amount',
         'docents_always_pay',
         'members_must_pay',
+        'show_for_students_docents',
+        'show_for_partner_companies',
     ];
 
     protected $casts = [
@@ -33,6 +35,8 @@ class EventPartner extends Pivot
         'docent_payment_amount' => 'decimal:2',
         'docents_always_pay' => 'boolean',
         'members_must_pay' => 'boolean',
+        'show_for_students_docents' => 'boolean',
+        'show_for_partner_companies' => 'boolean',
     ];
 
     public function event(): BelongsTo

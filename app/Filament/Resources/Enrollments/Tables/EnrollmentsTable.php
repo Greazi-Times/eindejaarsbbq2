@@ -345,6 +345,17 @@ class EnrollmentsTable
             return $record->student_association;
         }
 
+        if ($record->type === 'docent' && filled($record->education)) {
+            $verenigingName = $record->event
+                ?->verenigingen()
+                ->where('education', $record->education)
+                ->value('name');
+
+            if (filled($verenigingName)) {
+                return $verenigingName;
+            }
+        }
+
         if (filled($record->company_name)) {
             return $record->company_name;
         }
