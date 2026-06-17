@@ -27,7 +27,7 @@ Route::get('/', function () {
             return null;
         }
 
-        return Storage::disk('public')->url($logo);
+        return '/storage/'.ltrim($logo, '/');
     };
 
     $websiteUrl = static function (?string $website): ?string {
