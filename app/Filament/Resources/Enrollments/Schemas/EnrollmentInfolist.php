@@ -6,6 +6,7 @@ use App\Filament\Resources\Enrollments\EnrollmentResource;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class EnrollmentInfolist
 {
@@ -66,7 +67,7 @@ class EnrollmentInfolist
                         : '-'),
                 TextEntry::make('mollie_payment_link_url')
                     ->label('Betaallink')
-                    ->url(fn ($state) => $state)
+                    ->url(fn (?string $state): ?string => self::safeMollieUrl($state))
                     ->openUrlInNewTab()
                     ->placeholder('-')
                     ->columnSpanFull(),
@@ -87,5 +88,23 @@ class EnrollmentInfolist
                     ->dateTime()
                     ->placeholder('-'),
             ]);
+    }
+
+    private static function safeMollieUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = Str::lower((string) parse_url($url, PHP_URL_HOST));
+
+        if ($scheme !== 'https') {
+            return null;
+        }
+
+        return $host === 'mollie.com' || Str::endsWith($host, '.mollie.com')
+            ? $url
+            : null;
     }
 }

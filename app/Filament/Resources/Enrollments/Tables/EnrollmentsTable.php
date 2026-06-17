@@ -244,7 +244,7 @@ class EnrollmentsTable
                                         }
 
                                         fputcsv($handle, [
-                                            $enrollment->full_name,
+                                            static::escapeCsvCell($enrollment->full_name),
                                             match ($enrollment->type) {
                                                 'student' => 'Student',
                                                 'docent' => 'Docent',
@@ -256,10 +256,10 @@ class EnrollmentsTable
                                                 'vereniging' => 'Vereniging',
                                                 default => '-',
                                             },
-                                            $enrollment->partner_organization_name ?: '-',
-                                            $enrollment->company_name ?: '-',
+                                            static::escapeCsvCell($enrollment->partner_organization_name ?: '-'),
+                                            static::escapeCsvCell($enrollment->company_name ?: '-'),
                                             $enrollment->guest_amount,
-                                            $dietaryPreferences ?: '-',
+                                            static::escapeCsvCell($dietaryPreferences ?: '-'),
                                         ]);
                                     }
                                 });
@@ -275,6 +275,19 @@ class EnrollmentsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function escapeCsvCell(mixed $value): mixed
+    {
+        if (! is_string($value) || $value === '') {
+            return $value;
+        }
+
+        if (preg_match('/^\s*[=+\-@]/', $value) === 1) {
+            return "'{$value}";
+        }
+
+        return $value;
     }
 
     private static function defaultEventId(): ?int

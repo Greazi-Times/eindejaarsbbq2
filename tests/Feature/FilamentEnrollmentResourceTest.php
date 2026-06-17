@@ -2,6 +2,7 @@
 
 use App\Filament\Resources\Enrollments\EnrollmentResource;
 use App\Filament\Resources\Enrollments\Pages\ListEnrollments;
+use App\Filament\Resources\Enrollments\Tables\EnrollmentsTable;
 use App\Models\Enrollment;
 use App\Models\Event;
 use Filament\Actions\Testing\TestAction;
@@ -320,6 +321,17 @@ test('enrollments table can filter by payment requirement and payment status', f
         ->filterTable('payment_status_group', 'waiting')
         ->assertCanSeeTableRecords([$waiting])
         ->assertCanNotSeeTableRecords([$notNeeded, $paid, $failed]);
+});
+
+test('enrollment csv export escapes spreadsheet formulas', function () {
+    expect(EnrollmentsTable::escapeCsvCell('=IMPORTXML("https://example.test")'))
+        ->toBe('\'=IMPORTXML("https://example.test")')
+        ->and(EnrollmentsTable::escapeCsvCell(' +SUM(1,2)'))
+        ->toBe("' +SUM(1,2)")
+        ->and(EnrollmentsTable::escapeCsvCell('Normal value'))
+        ->toBe('Normal value')
+        ->and(EnrollmentsTable::escapeCsvCell(3))
+        ->toBe(3);
 });
 
 function paymentIconFor(IconColumn $column, Enrollment $enrollment): string

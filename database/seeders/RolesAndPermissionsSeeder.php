@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -80,11 +81,18 @@ class RolesAndPermissionsSeeder extends Seeder
             ...$customPermissions,
         ]);
 
+        $adminEmail = env('ADMIN_EMAIL');
+        $adminPassword = env('ADMIN_PASSWORD');
+
+        if (! $adminEmail || ! $adminPassword) {
+            throw new RuntimeException('ADMIN_EMAIL and ADMIN_PASSWORD must be set before seeding the initial admin user.');
+        }
+
         $admin = User::firstOrCreate(
-            ['email' => env('ADMIN_EMAIL', 'test@example.com')],
+            ['email' => Str::lower($adminEmail)],
             [
-                'name' => env('ADMIN_NAME', 'Test User'),
-                'password' => Hash::make(env('ADMIN_PASSWORD', 'password')),
+                'name' => env('ADMIN_NAME', 'Administrator'),
+                'password' => Hash::make($adminPassword),
             ],
         );
 

@@ -22,7 +22,7 @@ class VerenigingInfolist
                     ->label('Logo')
                     ->placeholder('-'),
                 TextEntry::make('website')
-                    ->url(fn ($state) => $state)
+                    ->url(fn (?string $state): ?string => self::safeHttpsUrl($state))
                     ->openUrlInNewTab()
                     ->placeholder('-'),
                 TextEntry::make('description')
@@ -35,5 +35,23 @@ class VerenigingInfolist
                     ->dateTime()
                     ->placeholder('-'),
             ]);
+    }
+
+    private static function safeHttpsUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $url = trim($url);
+
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return $scheme === 'https' && $host ? $url : null;
     }
 }

@@ -13,15 +13,42 @@ Route::get('/', function () {
             return null;
         }
 
-        if (
-            str_starts_with($logo, 'http://')
-            || str_starts_with($logo, 'https://')
-            || str_starts_with($logo, '/')
-        ) {
+        $logo = trim($logo);
+
+        if ($logo === '' || str_starts_with($logo, '//')) {
+            return null;
+        }
+
+        if (str_starts_with($logo, '/')) {
             return $logo;
         }
 
+        if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $logo)) {
+            return null;
+        }
+
         return Storage::disk('public')->url($logo);
+    };
+
+    $websiteUrl = static function (?string $website): ?string {
+        if (! $website) {
+            return null;
+        }
+
+        $website = trim($website);
+
+        if (! filter_var($website, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        $scheme = parse_url($website, PHP_URL_SCHEME);
+        $host = parse_url($website, PHP_URL_HOST);
+
+        if ($scheme !== 'https' || ! $host) {
+            return null;
+        }
+
+        return $website;
     };
 
     $activeEvent = Event::query()
@@ -48,7 +75,7 @@ Route::get('/', function () {
                 'id' => $partner->id,
                 'name' => $partner->name,
                 'logo' => $logoUrl($partner->logo),
-                'website' => $partner->website,
+                'website' => $websiteUrl($partner->website),
                 'show_for_students_docents' => (bool) ($partner->pivot?->show_for_students_docents ?? false),
                 'show_for_partner_companies' => (bool) ($partner->pivot?->show_for_partner_companies ?? true),
                 'current_guest_amount' => (int) $activeEvent->enrollments
@@ -69,7 +96,7 @@ Route::get('/', function () {
                 'name' => $vereniging->name,
                 'education' => $vereniging->education,
                 'logo' => $logoUrl($vereniging->logo),
-                'website' => $vereniging->website,
+                'website' => $websiteUrl($vereniging->website),
                 'show_for_students_docents' => (bool) ($vereniging->pivot?->show_for_students_docents ?? false),
                 'show_for_partner_companies' => (bool) ($vereniging->pivot?->show_for_partner_companies ?? true),
                 'current_guest_amount' => (int) $activeEvent->enrollments
@@ -327,8 +354,9 @@ Route::get('/privacy', fn () => redirect('/legal#privacy'))->name('privacy');
 Route::get('/cookies', fn () => redirect('/legal#cookies'))->name('cookies');
 
 Route::post('/aanmelden', [EnrollmentController::class, 'store'])
+    ->middleware('throttle:enrollments')
     ->name('enrollments.store');
 
 Route::get('/aanmelden/{enrollment}/betaling', [EnrollmentController::class, 'paymentReturn'])
-    ->middleware('signed')
+    ->middleware(['signed', 'throttle:payment-returns'])
     ->name('enrollments.payment.return');

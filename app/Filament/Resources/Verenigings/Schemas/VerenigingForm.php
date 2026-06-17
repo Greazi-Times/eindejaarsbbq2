@@ -30,12 +30,15 @@ class VerenigingForm
                     ->default(false),
                 FileUpload::make('logo')
                     ->image()
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(1024)
                     ->disk('public')
                     ->directory('verenigingen')
                     ->visibility('public')
                     ->imageEditor(),
                 TextInput::make('website')
                     ->url()
+                    ->rules(['nullable', 'url:https'])
                     ->maxLength(255),
                 Textarea::make('description')
                     ->columnSpanFull(),

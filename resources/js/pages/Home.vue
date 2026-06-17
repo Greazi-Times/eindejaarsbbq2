@@ -337,12 +337,16 @@ const getImageUrl = (logo: string | null) => {
         return null;
     }
 
-    if (
-        logo.startsWith('http://') ||
-        logo.startsWith('https://') ||
-        logo.startsWith('/')
-    ) {
+    if (logo.startsWith('//')) {
+        return null;
+    }
+
+    if (logo.startsWith('/')) {
         return logo;
+    }
+
+    if (/^[a-z][a-z0-9+.-]*:/i.test(logo)) {
+        return null;
     }
 
     return `/storage/${logo}`;
@@ -1163,6 +1167,7 @@ const addToOutlookCalendar = () => {
     window.open(
         `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`,
         '_blank',
+        'noopener,noreferrer',
     );
 
     closeCalendarModal();
@@ -1188,6 +1193,7 @@ const addToGoogleCalendar = () => {
     window.open(
         `https://calendar.google.com/calendar/render?${params.toString()}`,
         '_blank',
+        'noopener,noreferrer',
     );
 
     closeCalendarModal();

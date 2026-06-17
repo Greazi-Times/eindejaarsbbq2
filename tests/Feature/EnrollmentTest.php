@@ -1024,7 +1024,7 @@ it('rejects over-limit enrollments when the extra person price is missing', func
     expect(Enrollment::query()->count())->toBe(0);
 });
 
-it('rejects duplicate email enrollments for the same event', function () {
+it('handles duplicate email enrollments without confirming the address exists', function () {
     $event = Event::query()->create([
         'name' => 'Eindejaars BBQ',
         'starts_at' => now()->addWeek(),
@@ -1063,14 +1063,74 @@ it('rejects duplicate email enrollments for the same event', function () {
         ]);
 
     $response
-        ->assertRedirect('/aanmelden')
-        ->assertSessionHas('banner.type', 'warning')
-        ->assertSessionHas('banner.title', 'E-mail al aangemeld')
-        ->assertSessionHasErrors([
-            'email' => 'Dit e-mailadres is al aangemeld voor dit event.',
-        ]);
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('banner.type', 'success')
+        ->assertSessionHas('banner.title', 'Aanmelding verwerkt')
+        ->assertSessionDoesntHaveErrors();
 
     expect(Enrollment::query()->count())->toBe(1);
+});
+
+it('normalizes enrollment emails and rejects unexpected dietary preferences', function () {
+    $event = Event::query()->create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addWeek(),
+        'ends_at' => now()->addWeek()->addHours(3),
+        'location' => 'Hogeschool',
+    ]);
+
+    $vereniging = Vereniging::query()->create([
+        'name' => 'Free Association',
+        'education' => 'mechatronica',
+    ]);
+
+    $event->verenigingen()->attach($vereniging);
+
+    $invalidResponse = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => 'Student Tester',
+            'email' => 'student-invalid@example.com',
+            'type' => 'student',
+            'education' => 'mechatronica',
+            'is_organization_member' => false,
+            'guest_amount' => 1,
+            'dietary_preferences' => [
+                'person-1' => ['vegetarian', '=IMPORTXML("https://example.test")'],
+            ],
+        ]);
+
+    $invalidResponse
+        ->assertRedirect('/aanmelden')
+        ->assertSessionHasErrors('dietary_preferences.person-1.1');
+
+    expect(Enrollment::query()->count())->toBe(0);
+
+    $response = $this
+        ->from('/aanmelden')
+        ->post(route('enrollments.store'), [
+            'full_name' => '  Student   Tester  ',
+            'email' => '  STUDENT-NORMALIZED@example.com ',
+            'type' => 'student',
+            'education' => 'mechatronica',
+            'is_organization_member' => false,
+            'guest_amount' => 1,
+            'dietary_preferences' => [
+                'person-1' => ['vegetarian', 'halal'],
+            ],
+        ]);
+
+    $response
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('banner.type', 'success');
+
+    $enrollment = Enrollment::query()->firstOrFail();
+
+    expect($enrollment->full_name)->toBe('Student Tester')
+        ->and($enrollment->email)->toBe('student-normalized@example.com')
+        ->and($enrollment->dietary_preferences)->toBe([
+            'person-1' => ['vegetarian', 'halal'],
+        ]);
 });
 
 function fakeEnrollmentMollieService(): MolliePaymentService

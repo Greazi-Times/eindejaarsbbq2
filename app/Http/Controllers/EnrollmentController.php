@@ -10,6 +10,8 @@ use App\Services\MolliePaymentService;
 use App\Support\EducationOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +20,8 @@ class EnrollmentController extends Controller
 {
     public function store(Request $request, MolliePaymentService $mollie): RedirectResponse|Response
     {
+        $request->merge($this->normalizedEnrollmentInput($request));
+
         $event = Event::query()
             ->with(['partners', 'verenigingen'])
             ->whereNotNull('starts_at')
@@ -34,14 +38,19 @@ class EnrollmentController extends Controller
         $validated = $request->validate(
             [
                 'full_name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'email', 'max:255'],
+                'email' => ['required', 'email:rfc', 'max:255'],
 
                 'type' => ['required', 'string', 'in:student,docent,partner-bedrijf'],
 
                 'student_association' => ['nullable', 'string', 'max:255'],
                 'custom_student_association' => ['nullable', 'string', 'max:255'],
 
-                'education' => ['required_unless:type,partner-bedrijf', 'nullable', 'string', 'max:255'],
+                'education' => [
+                    'required_unless:type,partner-bedrijf',
+                    'nullable',
+                    'string',
+                    Rule::in(array_keys(EducationOptions::formOptions())),
+                ],
                 'custom_education' => ['required_if:education,'.EducationOptions::OTHER, 'nullable', 'string', 'max:255'],
 
                 'partner_organization_type' => ['nullable', 'string', 'in:partner,vereniging'],
@@ -51,7 +60,9 @@ class EnrollmentController extends Controller
 
                 'guest_amount' => ['required', 'integer', 'min:1', 'max:3'],
 
-                'dietary_preferences' => ['nullable', 'array'],
+                'dietary_preferences' => ['nullable', 'array', 'max:3'],
+                'dietary_preferences.*' => ['nullable', 'array', 'max:3'],
+                'dietary_preferences.*.*' => ['string', 'in:vegetarian,vegan,halal'],
             ],
             [
                 'full_name.required' => 'Volledige naam is verplicht.',
@@ -129,15 +140,7 @@ class EnrollmentController extends Controller
         }
 
         if ($this->eventHasEnrollmentForEmail($event, $validated['email'])) {
-            $message = 'Dit e-mailadres is al aangemeld voor dit event.';
-
-            return back()
-                ->withErrors(['email' => $message])
-                ->with('banner', [
-                    'type' => 'warning',
-                    'title' => 'E-mail al aangemeld',
-                    'message' => $message,
-                ]);
+            return $this->enrollmentReceivedRedirect();
         }
 
         $paymentAmount = $this->paymentAmountForEnrollment($event, $validated);
@@ -178,13 +181,7 @@ class EnrollmentController extends Controller
             return Inertia::location($payment['url']);
         }
 
-        return redirect()
-            ->route('home')
-            ->with('banner', [
-                'type' => 'success',
-                'title' => 'Aanmelding ontvangen',
-                'message' => 'Je aanmelding is ontvangen. Je hoeft geen betaling te doen.',
-            ]);
+        return $this->enrollmentReceivedRedirect();
     }
 
     public function paymentReturn(Enrollment $enrollment, MolliePaymentService $mollie): RedirectResponse
@@ -213,9 +210,78 @@ class EnrollmentController extends Controller
                 'type' => 'warning',
                 'title' => 'Betaling nog niet afgerond',
                 'message' => 'Je aanmelding is ontvangen, maar je betaling is nog niet afgerond.',
-                'action_url' => $enrollment->mollie_payment_link_url,
+                'action_url' => $this->safeMollieUrl($enrollment->mollie_payment_link_url),
                 'action_label' => 'Betaling afronden',
             ]);
+    }
+
+    private function normalizedEnrollmentInput(Request $request): array
+    {
+        $normalized = [];
+
+        foreach ([
+            'full_name',
+            'email',
+            'type',
+            'student_association',
+            'custom_student_association',
+            'education',
+            'custom_education',
+            'partner_organization_type',
+            'partner_organization_name',
+            'company_name',
+        ] as $field) {
+            if (! $request->has($field)) {
+                continue;
+            }
+
+            $value = $request->input($field);
+
+            if (! is_string($value)) {
+                continue;
+            }
+
+            $value = Str::squish($value);
+
+            if ($field === 'email') {
+                $value = Str::lower($value);
+            }
+
+            $normalized[$field] = $value === '' ? null : $value;
+        }
+
+        return $normalized;
+    }
+
+    private function enrollmentReceivedRedirect(): RedirectResponse
+    {
+        return redirect()
+            ->route('home')
+            ->with('banner', [
+                'type' => 'success',
+                'title' => 'Aanmelding verwerkt',
+                'message' => 'Als dit e-mailadres nog niet eerder voor dit event is gebruikt, staat je aanmelding op de gastenlijst.',
+            ]);
+    }
+
+    private function safeMollieUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = Str::lower((string) parse_url($url, PHP_URL_HOST));
+
+        if ($scheme !== 'https') {
+            return null;
+        }
+
+        if ($host === 'mollie.com' || Str::endsWith($host, '.mollie.com')) {
+            return $url;
+        }
+
+        return null;
     }
 
     private function syncPaymentStatus(Enrollment $enrollment, MolliePaymentService $mollie): void
@@ -614,7 +680,7 @@ class EnrollmentController extends Controller
     {
         return Enrollment::query()
             ->where('event_id', $event->id)
-            ->whereRaw('lower(email) = ?', [strtolower($email)])
+            ->whereRaw('lower(email) = ?', [Str::lower($email)])
             ->exists();
     }
 }

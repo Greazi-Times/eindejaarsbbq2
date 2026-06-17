@@ -77,7 +77,7 @@ class DashboardPanelProvider extends PanelProvider
                         shouldRegisterNavigation: true, // Customizes the 'account' link label in the panel User Menu (default = null)
                         userMenuLabel: 'My Profile', // Sets the navigation group for the My Profile page (default = null)
                     )->enableTwoFactorAuthentication(
-                        force: false, // force the user to enable 2FA before they can use the application (default = false)
+                        force: app()->isProduction(), // force the user to enable 2FA before they can use the application (default = false)
                     ),
             ]);
     }

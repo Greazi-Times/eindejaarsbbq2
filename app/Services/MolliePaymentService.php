@@ -37,7 +37,7 @@ class MolliePaymentService
         $payment = $response->json();
         $paymentUrl = data_get($payment, '_links.checkout.href');
 
-        if (! $paymentUrl) {
+        if (! $this->isTrustedMollieUrl($paymentUrl)) {
             throw new RuntimeException('Mollie did not return a checkout URL.');
         }
 
@@ -92,7 +92,8 @@ class MolliePaymentService
         return Http::baseUrl('https://api.mollie.com/v2/')
             ->withToken($apiKey)
             ->acceptJson()
-            ->asJson();
+            ->asJson()
+            ->timeout(10);
     }
 
     private function description(Enrollment $enrollment): string
@@ -102,5 +103,18 @@ class MolliePaymentService
             config('services.mollie.student_payment_description', 'Eindejaars BBQ aanmelding'),
             $enrollment->full_name,
         );
+    }
+
+    private function isTrustedMollieUrl(mixed $url): bool
+    {
+        if (! is_string($url) || $url === '') {
+            return false;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = Str::lower((string) parse_url($url, PHP_URL_HOST));
+
+        return $scheme === 'https'
+            && ($host === 'mollie.com' || Str::endsWith($host, '.mollie.com'));
     }
 }

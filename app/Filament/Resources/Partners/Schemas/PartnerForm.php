@@ -18,12 +18,16 @@ class PartnerForm
                     ->required(),
                 FileUpload::make('logo')
                     ->image()
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(1024)
                     ->disk('public')
                     ->directory('partners')
                     ->visibility('public')
                     ->imageEditor(),
                 TextInput::make('website')
-                    ->url(),
+                    ->url()
+                    ->rules(['nullable', 'url:https'])
+                    ->maxLength(255),
                 Toggle::make('show_on_registration_form')
                     ->label('Toon in aanmeldformulier')
                     ->helperText('Alleen partners met deze optie aan zijn zichtbaar voor studenten en docenten.')
