@@ -20,6 +20,7 @@ class VerenigingsTable
             ->columns([
                 ImageColumn::make('logo')
                     ->label('Logo')
+                    ->disk('public')
                     ->square(),
                 TextColumn::make('name')
                     ->searchable()

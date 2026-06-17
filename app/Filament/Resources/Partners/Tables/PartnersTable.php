@@ -21,6 +21,7 @@ class PartnersTable
                     ->searchable(),
                 ImageColumn::make('logo')
                     ->label('Logo')
+                    ->disk('public')
                     ->square(),
                 TextColumn::make('website')
                     ->searchable(),

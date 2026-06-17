@@ -15,6 +15,7 @@ class PartnerInfolist
                 TextEntry::make('name'),
                 ImageEntry::make('logo')
                     ->label('Logo')
+                    ->disk('public')
                     ->placeholder('-'),
                 TextEntry::make('website')
                     ->placeholder('-'),

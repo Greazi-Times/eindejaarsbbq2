@@ -20,6 +20,7 @@ class VerenigingInfolist
                     ->placeholder('-'),
                 ImageEntry::make('logo')
                     ->label('Logo')
+                    ->disk('public')
                     ->placeholder('-'),
                 TextEntry::make('website')
                     ->url(fn (?string $state): ?string => self::safeHttpsUrl($state))

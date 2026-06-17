@@ -33,8 +33,8 @@ it('passes public logo urls to the home page', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
             ->where('version', AppVersion::current())
-            ->where('activeEvent.partners.0.logo', Storage::disk('public')->url('partners/acme.png'))
-            ->where('activeEvent.verenigingen.0.logo', Storage::disk('public')->url('verenigingen/study.png'))
+            ->where('activeEvent.partners.0.logo', '/storage/partners/acme.png')
+            ->where('activeEvent.verenigingen.0.logo', '/storage/verenigingen/study.png')
         );
 });
 
