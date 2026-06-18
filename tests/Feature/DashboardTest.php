@@ -3,6 +3,7 @@
 use App\Models\Enrollment;
 use App\Models\Event;
 use App\Models\Vereniging;
+use App\Support\AppVersion;
 use Illuminate\Support\Carbon;
 
 afterEach(function (): void {
@@ -19,7 +20,9 @@ test('authenticated users can visit the dashboard', function () {
     $this->actingAs($user);
 
     $response = $this->get(route('filament.dashboard.pages.dashboard'));
-    $response->assertOk();
+    $response
+        ->assertOk()
+        ->assertSee('Versie '.AppVersion::current());
 });
 
 test('dashboard displays enrollment totals for the upcoming event', function () {
