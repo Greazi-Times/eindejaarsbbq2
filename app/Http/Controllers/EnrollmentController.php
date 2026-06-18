@@ -61,8 +61,8 @@ class EnrollmentController extends Controller
                 'guest_amount' => ['required', 'integer', 'min:1', 'max:3'],
 
                 'dietary_preferences' => ['nullable', 'array', 'max:3'],
-                'dietary_preferences.*' => ['nullable', 'array', 'max:3'],
-                'dietary_preferences.*.*' => ['string', 'in:vegetarian,vegan,halal'],
+                'dietary_preferences.*' => ['nullable', 'array', 'max:4'],
+                'dietary_preferences.*.*' => ['string', 'in:vegetarian,vegan,halal,gluten-free'],
             ],
             [
                 'full_name.required' => 'Volledige naam is verplicht.',

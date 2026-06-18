@@ -906,6 +906,10 @@ const dietaryOptions = [
         label: 'Halal',
         value: 'halal',
     },
+    {
+        label: 'Glutenvrij',
+        value: 'gluten-free',
+    },
 ];
 
 const dietaryOptionLabel = (value: string) => {

@@ -1170,7 +1170,7 @@ it('normalizes enrollment emails and rejects unexpected dietary preferences', fu
             'is_organization_member' => false,
             'guest_amount' => 1,
             'dietary_preferences' => [
-                'person-1' => ['vegetarian', 'halal'],
+                'person-1' => ['vegetarian', 'vegan', 'halal', 'gluten-free'],
             ],
         ]);
 
@@ -1183,7 +1183,7 @@ it('normalizes enrollment emails and rejects unexpected dietary preferences', fu
     expect($enrollment->full_name)->toBe('Student Tester')
         ->and($enrollment->email)->toBe('student-normalized@example.com')
         ->and($enrollment->dietary_preferences)->toBe([
-            'person-1' => ['vegetarian', 'halal'],
+            'person-1' => ['vegetarian', 'vegan', 'halal', 'gluten-free'],
         ]);
 });
 
