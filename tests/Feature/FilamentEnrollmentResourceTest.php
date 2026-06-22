@@ -62,6 +62,102 @@ test('enrollments table defaults to the dashboard event and can switch events', 
         ->assertCanNotSeeTableRecords([$upcomingEnrollment]);
 });
 
+test('enrollments table shows the latest enrollments first', function () {
+    $user = panelUser([
+        'ViewAny:Enrollment',
+        'View:Enrollment',
+    ]);
+
+    $event = Event::create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addMonth(),
+    ]);
+
+    $oldest = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Oldest Person',
+        'email' => 'oldest@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+    ]);
+
+    $newest = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Newest Person',
+        'email' => 'newest@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+    ]);
+
+    Enrollment::query()
+        ->whereKey($oldest->getKey())
+        ->update(['created_at' => now()->subMinute()]);
+
+    Enrollment::query()
+        ->whereKey($newest->getKey())
+        ->update(['created_at' => now()]);
+
+    $this->actingAs($user);
+
+    Livewire::test(ListEnrollments::class)
+        ->assertCanSeeTableRecords([$newest, $oldest], inOrder: true);
+});
+
+test('enrollments table can filter by filled in diet wishes', function () {
+    $user = panelUser([
+        'ViewAny:Enrollment',
+        'View:Enrollment',
+    ]);
+
+    $event = Event::create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addMonth(),
+    ]);
+
+    $withDietWishes = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Diet Person',
+        'email' => 'diet@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+        'dietary_preferences' => [
+            'person-1' => ['vegetarian'],
+        ],
+    ]);
+
+    $withEmptyDietWishes = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'No Diet Person',
+        'email' => 'no-diet@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+        'dietary_preferences' => [],
+    ]);
+
+    $withoutDietWishes = Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Null Diet Person',
+        'email' => 'null-diet@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+        'dietary_preferences' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(ListEnrollments::class)
+        ->assertTableFilterExists('dietary_preferences')
+        ->assertTableColumnStateSet('dietary_preferences', ['Person 1: Vegetarian'], $withDietWishes)
+        ->filterTable('dietary_preferences', true)
+        ->assertCanSeeTableRecords([$withDietWishes])
+        ->assertCanNotSeeTableRecords([$withEmptyDietWishes, $withoutDietWishes]);
+
+    Livewire::test(ListEnrollments::class)
+        ->filterTable('dietary_preferences', false)
+        ->assertCanSeeTableRecords([$withEmptyDietWishes, $withoutDietWishes])
+        ->assertCanNotSeeTableRecords([$withDietWishes]);
+});
+
 test('enrollments table masks contact fields without the personal data permission', function () {
     $user = panelUser([
         'ViewAny:Enrollment',

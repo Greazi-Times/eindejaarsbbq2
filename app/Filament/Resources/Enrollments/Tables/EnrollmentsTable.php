@@ -34,6 +34,7 @@ class EnrollmentsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('event.name')
                     ->label('Event')
@@ -92,6 +93,14 @@ class EnrollmentsTable
                     ->label('Guest Amount')
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('dietary_preferences')
+                    ->label('Diet wishes')
+                    ->state(fn (Enrollment $record): array => static::formatDietaryPreferences($record->dietary_preferences))
+                    ->badge()
+                    ->limitList(3)
+                    ->expandableLimitedList()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-'),
                 IconColumn::make('requires_payment')
                     ->label('Betaling vereist')
                     ->boolean()
@@ -152,6 +161,14 @@ class EnrollmentsTable
                             ->label('Needs payment')
                             ->trueLabel('Yes')
                             ->falseLabel('No'),
+                        TernaryFilter::make('dietary_preferences')
+                            ->label('Diet wishes filled in')
+                            ->trueLabel('Yes')
+                            ->falseLabel('No')
+                            ->queries(
+                                true: fn (Builder $query): Builder => static::applyDietaryPreferencesFilter($query, true),
+                                false: fn (Builder $query): Builder => static::applyDietaryPreferencesFilter($query, false),
+                            ),
                         SelectFilter::make('payment_status_group')
                             ->label('Payment status')
                             ->options([
@@ -443,6 +460,64 @@ class EnrollmentsTable
                 }),
             default => $query,
         };
+    }
+
+    private static function applyDietaryPreferencesFilter(Builder $query, bool $filled): Builder
+    {
+        $emptyValues = ['[]', '{}', 'null'];
+
+        if ($filled) {
+            return $query
+                ->whereNotNull('dietary_preferences')
+                ->whereNotIn('dietary_preferences', $emptyValues);
+        }
+
+        return $query->where(function (Builder $query) use ($emptyValues): void {
+            $query
+                ->whereNull('dietary_preferences')
+                ->orWhereIn('dietary_preferences', $emptyValues);
+        });
+    }
+
+    /**
+     * @param  array<string, array<int, string>>|null  $preferences
+     * @return array<int, string>
+     */
+    private static function formatDietaryPreferences(?array $preferences): array
+    {
+        if (blank($preferences)) {
+            return [];
+        }
+
+        $labels = [
+            'vegetarian' => 'Vegetarian',
+            'vegan' => 'Vegan',
+            'halal' => 'Halal',
+            'gluten-free' => 'Gluten-free',
+        ];
+
+        return collect($preferences)
+            ->flatMap(function (mixed $personPreferences, string|int $person): array {
+                if (! is_array($personPreferences)) {
+                    return [];
+                }
+
+                $personNumber = preg_match('/(\d+)$/', (string) $person, $matches) === 1
+                    ? $matches[1]
+                    : (string) $person;
+
+                return collect($personPreferences)
+                    ->filter(fn (mixed $preference): bool => filled($preference))
+                    ->map(fn (string $preference): string => "Person {$personNumber}: {$preference}")
+                    ->all();
+            })
+            ->map(function (string $preference) use ($labels): string {
+                [$person, $value] = array_pad(explode(': ', $preference, 2), 2, '');
+
+                return "{$person}: ".($labels[$value] ?? Str::headline($value));
+            })
+            ->values()
+            ->all();
     }
 
     private static function paymentStatusIcon(Enrollment $record): string
