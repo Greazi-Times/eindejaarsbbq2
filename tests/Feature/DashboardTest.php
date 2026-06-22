@@ -4,6 +4,7 @@ use App\Models\Enrollment;
 use App\Models\Event;
 use App\Models\Vereniging;
 use App\Support\AppVersion;
+use App\Support\DailyEnrollmentSeries;
 use Illuminate\Support\Carbon;
 
 afterEach(function (): void {
@@ -76,6 +77,7 @@ test('dashboard displays enrollment totals for the upcoming event', function () 
     $response
         ->assertOk()
         ->assertSee('Personen aangemeld')
+        ->assertSee('Aanmeldingen per dag')
         ->assertSee('Aankomende BBQ')
         ->assertSee('5')
         ->assertSee('Personen per vereniging/partner')
@@ -162,4 +164,60 @@ test('dashboard groups docents by the vereniging linked to their education', fun
         ->assertOk()
         ->assertSee('SV-Motus')
         ->assertDontSee('Geen vereniging/partner');
+});
+
+test('dashboard chart shows the total number of enrollments for every day', function () {
+    Carbon::setTestNow('2026-06-15 12:00:00');
+
+    $user = dashboardUser();
+
+    $event = Event::create([
+        'name' => 'Aankomende BBQ',
+        'starts_at' => now()->addMonth(),
+    ]);
+
+    Carbon::setTestNow('2026-06-12 09:00:00');
+
+    Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Eerste aanmelding',
+        'email' => 'first@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+    ]);
+
+    Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Tweede aanmelding',
+        'email' => 'second@example.com',
+        'type' => 'student',
+        'guest_amount' => 2,
+    ]);
+
+    Carbon::setTestNow('2026-06-14 15:00:00');
+
+    Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Derde aanmelding',
+        'email' => 'third@example.com',
+        'type' => 'partner-bedrijf',
+        'company_name' => 'Test BV',
+        'guest_amount' => 4,
+    ]);
+
+    Carbon::setTestNow('2026-06-15 12:00:00');
+
+    $this->actingAs($user)
+        ->get(route('filament.dashboard.pages.dashboard'))
+        ->assertOk()
+        ->assertSee('Aanmeldingen per dag');
+
+    $series = app(DailyEnrollmentSeries::class)->forEvent($event);
+
+    expect($series['data'])->toBe([2, 0, 1])
+        ->and($series['labels'])->toBe([
+            '12-06-2026',
+            '13-06-2026',
+            '14-06-2026',
+        ]);
 });

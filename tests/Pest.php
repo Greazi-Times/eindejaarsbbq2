@@ -77,6 +77,7 @@ function panelUser(array $permissions = []): User
 function dashboardUser(): User
 {
     return panelUser([
+        'View:DailyEnrollmentChart',
         'View:EventEnrollmentOverview',
         'View:OrganizationEnrollmentTotals',
     ]);

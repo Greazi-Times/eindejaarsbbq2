@@ -32,6 +32,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         $dashboardPermissions = [
+            'View:DailyEnrollmentChart',
             'View:EventEnrollmentOverview',
             'View:OrganizationEnrollmentTotals',
             'View:MyProfilePage',
