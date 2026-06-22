@@ -166,7 +166,7 @@ test('dashboard groups docents by the vereniging linked to their education', fun
         ->assertDontSee('Geen vereniging/partner');
 });
 
-test('dashboard chart shows the total number of enrollments for every day', function () {
+test('dashboard chart shows daily enrollments and the cumulative number of people', function () {
     Carbon::setTestNow('2026-06-15 12:00:00');
 
     $user = dashboardUser();
@@ -210,11 +210,13 @@ test('dashboard chart shows the total number of enrollments for every day', func
     $this->actingAs($user)
         ->get(route('filament.dashboard.pages.dashboard'))
         ->assertOk()
-        ->assertSee('Aanmeldingen per dag');
+        ->assertSee('Aanmeldingen en personen per dag')
+        ->assertSee('Totaal personen');
 
     $series = app(DailyEnrollmentSeries::class)->forEvent($event);
 
-    expect($series['data'])->toBe([2, 0, 1])
+    expect($series['enrollmentCounts'])->toBe([2, 0, 1])
+        ->and($series['cumulativePeopleCounts'])->toBe([3, 3, 7])
         ->and($series['labels'])->toBe([
             '12-06-2026',
             '13-06-2026',
