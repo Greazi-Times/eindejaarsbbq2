@@ -17,13 +17,6 @@ class EventEnrollmentOverview extends StatsOverviewWidget
 
     protected static ?int $sort = -3;
 
-    protected ?string $heading = 'Aanmeldingen';
-
-    protected function getDescription(): ?string
-    {
-        return $this->getDashboardEventDescription($this->getDashboardEvent());
-    }
-
     protected function getStats(): array
     {
         $event = $this->getDashboardEvent();
@@ -45,12 +38,12 @@ class EventEnrollmentOverview extends StatsOverviewWidget
 
         return [
             Stat::make('Personen aangemeld', Number::format((int) $totals->people_count))
-                ->description($this->getDashboardEventScopeLabel($event))
+                ->description($event->name)
                 ->icon('heroicon-o-users')
                 ->color('primary'),
 
             Stat::make('Aanmeldingen', Number::format((int) $totals->enrollment_count))
-                ->description($event->name)
+                ->description('Ingediende formulieren')
                 ->icon('heroicon-o-clipboard-document-list')
                 ->color('info'),
 

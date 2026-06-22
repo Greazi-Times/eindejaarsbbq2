@@ -84,20 +84,21 @@ html.fi.dark {
 }
 
 .fi-logo {
-    @apply text-base font-bold text-white;
-    letter-spacing: 0.02em;
+    @apply text-white;
 }
 
-.fi-logo::before {
-    content: '';
-    display: inline-block;
-    width: 1.9rem;
-    height: 1.9rem;
-    margin-right: 0.75rem;
-    vertical-align: middle;
-    border-radius: 0.5rem;
-    background: linear-gradient(135deg, var(--dashboard-primary), var(--dashboard-secondary));
-    box-shadow: 0 10px 24px rgba(234, 96, 42, 0.28);
+.dashboard-brand-logo {
+    @apply flex h-full min-w-0 items-center gap-3;
+}
+
+.dashboard-brand-logo__mark {
+    @apply h-full w-auto shrink-0;
+    filter: drop-shadow(0 8px 14px rgba(234, 96, 42, 0.22));
+}
+
+.dashboard-brand-logo__label {
+    @apply truncate text-base font-bold text-white;
+    letter-spacing: 0.02em;
 }
 
 .fi-header-heading {
@@ -372,9 +373,11 @@ html.fi.dark {
         @apply px-4 py-6;
     }
 
-    .fi-logo::before {
-        width: 1.65rem;
-        height: 1.65rem;
-        margin-right: 0.625rem;
+    .dashboard-brand-logo {
+        @apply gap-2.5;
+    }
+
+    .dashboard-brand-logo__label {
+        @apply text-sm;
     }
 }

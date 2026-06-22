@@ -24,6 +24,8 @@ test('authenticated users can visit the dashboard', function () {
     $response
         ->assertOk()
         ->assertSee('Versie '.AppVersion::current())
+        ->assertSee('data-dashboard-brand-logo', escape: false)
+        ->assertSee('/favicon.svg')
         ->assertSee('dashboard-header-account')
         ->assertDontSee('fi-account-widget');
 });
@@ -79,6 +81,7 @@ test('dashboard displays enrollment totals for the upcoming event', function () 
     $response
         ->assertOk()
         ->assertSee('Personen aangemeld')
+        ->assertSee('Ingediende formulieren')
         ->assertSee('Aanmeldingen per dag')
         ->assertSee('Aankomende BBQ')
         ->assertSee('5')
@@ -86,6 +89,8 @@ test('dashboard displays enrollment totals for the upcoming event', function () 
         ->assertSee('Vereniging Alpha')
         ->assertSee('Partner Beta')
         ->assertDontSee('Oude Vereniging');
+
+    expect(substr_count($response->getContent(), 'Aankomend event: Aankomende BBQ'))->toBe(2);
 });
 
 test('dashboard falls back to the last event when no future event is planned', function () {

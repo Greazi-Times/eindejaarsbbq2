@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { PhGithubLogo, PhHamburger } from '@phosphor-icons/vue';
+import { PhGithubLogo } from '@phosphor-icons/vue';
+import BrandLogo from '@/components/BrandLogo.vue';
 
 defineProps<{
     partners?: {
@@ -27,16 +28,7 @@ const page = usePage();
             <div class="grid grid-cols-1 gap-10 md:grid-cols-6">
                 <!-- Brand -->
                 <div class="flex flex-col gap-6 md:col-span-2">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/20"
-                        >
-                            <PhHamburger :size="22" weight="fill" />
-                        </div>
-                        <span class="text-lg font-semibold"
-                            >Eindejaars BBQ</span
-                        >
-                    </div>
+                    <BrandLogo label="Eindejaars BBQ" />
 
                     <p class="max-w-sm text-white/70">
                         De beste barbecue van het jaar, georganiseerd door de

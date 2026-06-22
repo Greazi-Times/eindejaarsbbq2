@@ -32,6 +32,9 @@ class DashboardPanelProvider extends PanelProvider
             ->path('dashboard')
             ->viteTheme('resources/css/filament/dashboard/theme.css')
             ->brandName('EindejaarsBBQ.nl')
+            ->brandLogo(fn () => view('filament.brand-logo'))
+            ->brandLogoHeight('2.25rem')
+            ->favicon('/favicon.svg')
             ->login()
             ->colors([
                 'primary' => Color::Orange,

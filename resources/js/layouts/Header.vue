@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { PhGithubLogo, PhHamburger } from '@phosphor-icons/vue';
+import { PhGithubLogo } from '@phosphor-icons/vue';
+import BrandLogo from '@/components/BrandLogo.vue';
 
 const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
@@ -40,18 +41,7 @@ const scrollToTop = () => {
             >
                 <!-- Left: Logo -->
                 <div class="site-header__brand flex min-w-0 items-center">
-                    <div
-                        class="site-header__mark flex shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/20"
-                    >
-                        <PhHamburger
-                            class="site-header__mark-icon"
-                            weight="fill"
-                        />
-                    </div>
-                    <span
-                        class="site-header__title truncate font-bold tracking-wide text-white"
-                        >EindejaarsBBQ.nl</span
-                    >
+                    <BrandLogo size="sm" />
                 </div>
 
                 <!-- Center: Navigation -->
@@ -113,20 +103,6 @@ const scrollToTop = () => {
     gap: clamp(0.5rem, 1vw, 0.75rem);
 }
 
-.site-header__mark {
-    width: clamp(2rem, 4.6svh, 2.5rem);
-    height: clamp(2rem, 4.6svh, 2.5rem);
-}
-
-.site-header__mark-icon {
-    width: clamp(1.15rem, 2.5svh, 1.375rem);
-    height: clamp(1.15rem, 2.5svh, 1.375rem);
-}
-
-.site-header__title {
-    font-size: clamp(0.875rem, 1.45svh, 1rem);
-}
-
 .site-header__nav {
     margin-left: clamp(1.25rem, 2.25vw, 3rem);
     gap: clamp(1.25rem, 2vw, 2.25rem);
@@ -145,15 +121,6 @@ const scrollToTop = () => {
 @media (max-height: 760px) and (min-width: 1024px) {
     .site-header__inner {
         min-height: 3.5rem;
-    }
-
-    .site-header__mark {
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .site-header__title {
-        font-size: 0.875rem;
     }
 
     .site-header__nav {
