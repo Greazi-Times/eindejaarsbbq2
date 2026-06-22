@@ -14,7 +14,6 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
-use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -52,6 +51,11 @@ class DashboardPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->renderHook(
+                PanelsRenderHook::PAGE_HEADER_ACTIONS_AFTER,
+                fn () => view('filament.dashboard-account'),
+                scopes: Dashboard::class,
+            )
+            ->renderHook(
                 PanelsRenderHook::FOOTER,
                 fn () => view('filament.dashboard-version', [
                     'version' => AppVersion::current(),
@@ -59,9 +63,6 @@ class DashboardPanelProvider extends PanelProvider
                 scopes: Dashboard::class,
             )
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

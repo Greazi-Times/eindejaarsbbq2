@@ -23,7 +23,9 @@ test('authenticated users can visit the dashboard', function () {
     $response = $this->get(route('filament.dashboard.pages.dashboard'));
     $response
         ->assertOk()
-        ->assertSee('Versie '.AppVersion::current());
+        ->assertSee('Versie '.AppVersion::current())
+        ->assertSee('dashboard-header-account')
+        ->assertDontSee('fi-account-widget');
 });
 
 test('dashboard displays enrollment totals for the upcoming event', function () {

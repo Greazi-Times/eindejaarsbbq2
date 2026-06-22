@@ -109,6 +109,45 @@ html.fi.dark {
     @apply text-base;
 }
 
+.dashboard-header-account {
+    width: min(100%, 24rem);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+        var(--dashboard-surface);
+    border: 1px solid var(--dashboard-border);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5;
+}
+
+.dashboard-header-account__main {
+    @apply min-w-0 flex-1;
+}
+
+.dashboard-header-account__welcome,
+.dashboard-header-account__name {
+    @apply block truncate;
+}
+
+.dashboard-header-account__welcome {
+    @apply text-sm font-semibold text-white;
+}
+
+.dashboard-header-account__name {
+    color: var(--dashboard-text-muted);
+    @apply text-xs;
+}
+
+.dashboard-header-account__logout {
+    @apply shrink-0;
+}
+
+@media (max-width: 639px) {
+    .fi-header-actions-ctn:has(.dashboard-header-account),
+    .dashboard-header-account {
+        @apply w-full;
+    }
+}
+
 .fi-topbar {
     background: color-mix(in srgb, var(--dashboard-bg) 84%, transparent);
     border-bottom: 1px solid var(--dashboard-border);
