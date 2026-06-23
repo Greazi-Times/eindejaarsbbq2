@@ -46,6 +46,7 @@ chown -R www-data:www-data "$PROJECT_DIR/storage" "$PROJECT_DIR/bootstrap/cache"
 chmod -R ug+rwX "$PROJECT_DIR/storage" "$PROJECT_DIR/bootstrap/cache"
 
 echo "Reloading nginx..."
+nginx -t
 systemctl reload nginx
 
 echo "EindejaarsBBQ successfully updated to origin/$BRANCH!"

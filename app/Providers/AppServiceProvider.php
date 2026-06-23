@@ -60,8 +60,9 @@ class AppServiceProvider extends ServiceProvider
             $email = Str::lower((string) $request->input('email'));
 
             return [
-                Limit::perMinute(5)->by($request->ip()),
-                Limit::perHour(10)->by($email.'|'.$request->ip()),
+                Limit::perMinute(5)->by('enrollment-minute|'.$request->ip()),
+                Limit::perHour(20)->by('enrollment-hour|'.$request->ip()),
+                Limit::perHour(3)->by('enrollment-email|'.$email),
             ];
         });
 
