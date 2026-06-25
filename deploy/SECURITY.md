@@ -83,8 +83,6 @@ Copy the Cloudflare trust configuration first:
 cd /var/www/eindejaarsbbq
 sudo cp deploy/nginx-cloudflare-real-ip.conf \
   /etc/nginx/conf.d/cloudflare-real-ip.conf
-sudo cp deploy/nginx-cloudflare-only.conf \
-  /etc/nginx/snippets/cloudflare-only.conf
 sudo cp deploy/nginx-rate-limits.conf \
   /etc/nginx/conf.d/eindejaarsbbq-rate-limits.conf
 ```
@@ -109,6 +107,12 @@ Do not reload Nginx if `nginx -t` reports an error.
 
 The files in `/etc/nginx/conf.d` must be included from Nginx's `http`
 context. This is the standard layout on Debian and Ubuntu.
+
+Optional origin-only Nginx blocking is provided in
+`deploy/nginx-cloudflare-only.conf`, but do not enable it until the site is
+confirmed reachable through Cloudflare and direct-origin blocking is already
+working at the firewall. If enabled too early, it can lock out legitimate
+traffic on systems where the real-IP module or include order differs.
 
 ## 5. Restrict the server firewall
 
