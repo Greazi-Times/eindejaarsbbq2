@@ -288,6 +288,32 @@ class EnrollmentsTable
                     })
                     ->visible(fn (): bool => (Auth::user()?->can('ExportEnrollments') ?? false)
                         && EnrollmentResource::canViewPersonalData()),
+                Action::make('exportEmailList')
+                    ->label('E-maillijst exporteren')
+                    ->icon('heroicon-o-envelope')
+                    ->action(function () {
+                        return response()->streamDownload(function (): void {
+                            $handle = fopen('php://output', 'w');
+
+                            fputcsv($handle, ['E-mail']);
+
+                            Enrollment::query()
+                                ->whereNotNull('email')
+                                ->where('email', '!=', '')
+                                ->orderBy('email')
+                                ->pluck('email')
+                                ->unique()
+                                ->each(fn (string $email): bool|int => fputcsv($handle, [
+                                    static::escapeCsvCell($email),
+                                ]));
+
+                            fclose($handle);
+                        }, 'enrollments-email-list.csv', [
+                            'Content-Type' => 'text/csv',
+                        ]);
+                    })
+                    ->visible(fn (): bool => (Auth::user()?->can('ExportEnrollments') ?? false)
+                        && EnrollmentResource::canViewPersonalData()),
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

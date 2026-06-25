@@ -232,6 +232,56 @@ test('enrollments table keeps contact fields masked and can reveal them globally
         ->assertActionMounted(TestAction::make('viewPersonalData')->table($enrollment));
 });
 
+test('enrollment email list export is only visible with export and personal data permissions', function () {
+    $event = Event::create([
+        'name' => 'Eindejaars BBQ',
+        'starts_at' => now()->addMonth(),
+    ]);
+
+    Enrollment::create([
+        'event_id' => $event->id,
+        'full_name' => 'Email Person',
+        'email' => 'email@example.com',
+        'type' => 'student',
+        'guest_amount' => 1,
+    ]);
+
+    $exporterWithoutPersonalData = panelUser([
+        'ViewAny:Enrollment',
+        'View:Enrollment',
+        'ExportEnrollments',
+    ]);
+
+    $this->actingAs($exporterWithoutPersonalData);
+
+    Livewire::test(ListEnrollments::class)
+        ->assertTableActionHidden('exportEmailList');
+
+    $viewerWithoutExport = panelUser([
+        'ViewAny:Enrollment',
+        'View:Enrollment',
+        EnrollmentResource::VIEW_PERSONAL_DATA_PERMISSION,
+    ]);
+
+    $this->actingAs($viewerWithoutExport);
+
+    Livewire::test(ListEnrollments::class)
+        ->assertTableActionHidden('exportEmailList');
+
+    $allowedUser = panelUser([
+        'ViewAny:Enrollment',
+        'View:Enrollment',
+        'ExportEnrollments',
+        EnrollmentResource::VIEW_PERSONAL_DATA_PERMISSION,
+    ]);
+
+    $this->actingAs($allowedUser);
+
+    Livewire::test(ListEnrollments::class)
+        ->assertTableActionVisible('exportEmailList')
+        ->assertTableActionHasLabel('exportEmailList', 'E-maillijst exporteren');
+});
+
 test('enrollments table displays the selected association or organization', function () {
     $user = panelUser([
         'ViewAny:Enrollment',
